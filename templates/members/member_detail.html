@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ member.get_full_name }} - Member Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user"></i> Member Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Full Name:</strong> {{ member.get_full_name }}</p>
+                            <p><strong>Gender:</strong> {{ member.get_gender_display }}</p>
+                            <p><strong>Date of Birth:</strong> {{ member.date_of_birth }}</p>
+                            <p><strong>Age:</strong> {{ member.age }} years</p>
+                            <p><strong>Phone:</strong> {{ member.phone_number }}</p>
+                            <p><strong>Email:</strong> {{ member.email }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Cell Group:</strong> {{ member.cell_group.name|default:"Not Assigned" }}</p>
+                            <p><strong>Date Joined:</strong> {{ member.date_joined_church }}</p>
+                            <p><strong>Occupation:</strong> {{ member.occupation|default:"Not specified" }}</p>
+                            <p><strong>Baptized:</strong> {% if member.is_baptized %}Yes{% else %}No{% endif %}</p>
+                            {% if member.is_baptized %}
+                                <p><strong>Baptism Date:</strong> {{ member.baptism_date }}</p>
+                                <p><strong>Baptism Certificate:</strong> {{ member.baptism_certificate_number }}</p>
+                            {% endif %}
+                            <p><strong>Married:</strong> {% if member.is_married %}Yes{% else %}No{% endif %}</p>
+                            {% if member.is_married %}
+                                <p><strong>Marriage Date:</strong> {{ member.marriage_date }}</p>
+                                <p><strong>Spouse:</strong> {{ member.spouse_name }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a href="{% url 'members:member_edit' member.id %}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <a href="{% url 'members:member_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

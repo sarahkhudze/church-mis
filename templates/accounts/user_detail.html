@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}User Details - Church CMS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user"></i> User Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Full Name:</strong> {{ user_obj.get_full_name }}</p>
+                            <p><strong>Username:</strong> {{ user_obj.username }}</p>
+                            <p><strong>Email:</strong> {{ user_obj.email }}</p>
+                            <p><strong>Phone:</strong> {{ user_obj.phone_number|default:"Not provided" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Role:</strong> 
+                                {% if user_obj.role == 'admin' %}
+                                    <span class="badge bg-danger">Admin</span>
+                                {% elif user_obj.role == 'leader' %}
+                                    <span class="badge bg-warning text-dark">Leader</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Viewer</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Status:</strong>
+                                {% if user_obj.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                {% elif user_obj.status == 'approved' %}
+                                    <span class="badge bg-success">Approved</span>
+                                {% elif user_obj.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Cell Group:</strong> {{ user_obj.assigned_cell_group.name|default:"Not assigned" }}</p>
+                            <p><strong>Joined:</strong> {{ user_obj.created_at|date:"M d, Y" }}</p>
+                        </div>
+                    </div>
+                    {% if user_obj.rejection_reason %}
+                    <div class="alert alert-danger mt-3">
+                        <strong>Rejection Reason:</strong> {{ user_obj.rejection_reason }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'accounts:user_edit' user_obj.id %}" class="btn btn-warning">Edit</a>
+                    <a href="{% url 'accounts:user_management' %}" class="btn btn-secondary">Back to List</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

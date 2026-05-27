@@ -1,0 +1,67 @@
+# Create .gitignore file
+echo "# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Django
+*.log
+*.pot
+*.pyc
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+
+# Database
+*.db
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+
+# Migrations - Uncomment if you want to ignore migrations
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# Media files
+media/
+
+# Testing
+.coverage
+htmlcov/
+
+# Package files
+*.egg-info/
+dist/
+build/
+
+# Node (if any)
+node_modules/
+package-lock.json
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride" > .gitignore

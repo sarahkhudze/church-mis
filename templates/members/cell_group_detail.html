@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ cell_group.name }} - Cell Group Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-church"></i> {{ cell_group.name }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Location:</strong> {{ cell_group.location }}</p>
+                            <p><strong>Leader:</strong> {{ cell_group.leader.get_full_name|default:"Not Assigned" }}</p>
+                            <p><strong>Meeting Day:</strong> {{ cell_group.meeting_day|default:"Not Set" }}</p>
+                            <p><strong>Meeting Time:</strong> {{ cell_group.meeting_time|default:"Not Set" }}</p>
+                            <p><strong>Total Members:</strong> {{ member_count }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            {% if cell_group.description %}
+                                <p><strong>Description:</strong></p>
+                                <p>{{ cell_group.description }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>Members in this Cell Group</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Gender</th>
+                                        <th>Phone</th>
+                                        <th>Baptized</th>
+                                        <th>Married</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in members %}
+                                    <tr>
+                                        <td>{{ member.get_full_name }}</td>
+                                        <td>{{ member.get_gender_display }}</td>
+                                        <td>{{ member.phone_number }}</td>
+                                        <td>{% if member.is_baptized %}Yes{% else %}No{% endif %}</td>
+                                        <td>{% if member.is_married %}Yes{% else %}No{% endif %}</td>
+                                        <td>
+                                            <a href="{% url 'members:member_detail' member.id %}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center">No members in this cell group yet.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{% url 'members:cell_group_edit' cell_group.id %}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Edit Group
+                        </a>
+                        <a href="{% url 'members:cell_group_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Groups
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

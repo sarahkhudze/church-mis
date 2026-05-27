@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}Activate User - Church CMS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6 mx-auto">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-check-circle"></i> Activate User</h4>
+                </div>
+                <div class="card-body">
+                    <p>Are you sure you want to activate <strong>{{ user.get_full_name }}</strong>?</p>
+                    <p>This user will be able to log in again.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">Activate</button>
+                        <a href="{% url 'accounts:user_management' %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

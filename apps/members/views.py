@@ -1,0 +1,413 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Q, Count
+from django.utils import timezone
+from datetime import date
+
+from .models import Member
+from apps.cell_groups.models import CellGroup
+from .forms import MemberForm, MemberSearchForm, CellGroupForm, BulkMemberActionForm
+from apps.accounts.utils import log_activity, can_manage_member, get_user_members
+
+
+@login_required(login_url='login')
+def member_list_view(request):
+    """Display list of members with filtering and searching."""
+    members = get_user_members(request.user)
+    
+    form = MemberSearchForm(request.GET)
+    
+    # Search
+    search_query = request.GET.get('search', '')
+    if search_query:
+        members = members.filter(
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(phone_number__icontains=search_query)
+        )
+    
+    # Gender filter
+    gender = request.GET.get('gender', '')
+    if gender:
+        members = members.filter(gender=gender)
+    
+    # Baptized filter
+    is_baptized = request.GET.get('is_baptized', '')
+    if is_baptized:
+        members = members.filter(is_baptized=is_baptized == 'True')
+    
+    # Married filter
+    is_married = request.GET.get('is_married', '')
+    if is_married:
+        members = members.filter(is_married=is_married == 'True')
+    
+    # Cell group filter
+    cell_group = request.GET.get('cell_group', '')
+    if cell_group:
+        members = members.filter(cell_group_id=cell_group)
+    
+    # Age range filter
+    age_from = request.GET.get('age_from', '')
+    age_to = request.GET.get('age_to', '')
+    if age_from or age_to:
+        today = date.today()
+        if age_from:
+            birth_year_to = today.year - int(age_from)
+            members = members.filter(date_of_birth__lte=date(birth_year_to, 12, 31))
+        if age_to:
+            birth_year_from = today.year - int(age_to)
+            members = members.filter(date_of_birth__gte=date(birth_year_from, 1, 1))
+    
+    # Ordering
+    ordering = request.GET.get('ordering', '-updated_at')
+    members = members.order_by(ordering)
+    
+    # Logging
+    if search_query or gender or is_baptized or is_married or cell_group or age_from or age_to:
+        log_activity(
+            user=request.user,
+            action='search',
+            entity_type='member',
+            description='Searched/filtered members',
+            request=request
+        )
+    
+    context = {
+        'members': members,
+        'form': form,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'members/member_list.html', context)
+
+
+@login_required(login_url='login')
+def member_detail_view(request, pk):
+    """Display member details."""
+    member = get_object_or_404(Member, pk=pk)
+    
+    # Check permissions
+    if not (request.user.is_admin() or 
+            (request.user.is_cell_leader() and member.cell_group == request.user.assigned_cell_group)):
+        messages.error(request, 'You do not have permission to view this member.')
+        return redirect('members:member_list')
+    
+    log_activity(
+        user=request.user,
+        action='view',
+        entity_type='member',
+        description=f'Viewed member: {member.get_full_name()}',
+        entity_id=member.id,
+        request=request
+    )
+    
+    context = {'member': member}
+    return render(request, 'members/member_detail.html', context)
+
+
+@login_required(login_url='login')
+def member_create_view(request):
+    """Create a new member."""
+    if not (request.user.is_admin() or request.user.is_cell_leader()):
+        messages.error(request, 'You do not have permission to add members.')
+        return redirect('members:member_list')
+    
+    if request.method == 'POST':
+        form = MemberForm(request.POST)
+        if form.is_valid():
+            member = form.save(commit=False)
+            member.created_by = request.user
+            
+            # If cell leader, assign to their cell group
+            if request.user.is_cell_leader() and not member.cell_group:
+                member.cell_group = request.user.assigned_cell_group
+            
+            member.save()
+            
+            log_activity(
+                user=request.user,
+                action='create',
+                entity_type='member',
+                description=f'Created member: {member.get_full_name()}',
+                entity_id=member.id,
+                request=request
+            )
+            
+            messages.success(request, f'Member {member.get_full_name()} added successfully!')
+            return redirect('members:member_detail', pk=member.id)
+    else:
+        form = MemberForm()
+        # If cell leader, limit to their cell group
+        if request.user.is_cell_leader() and request.user.assigned_cell_group:
+            form.fields['cell_group'].queryset = CellGroup.objects.filter(
+                id=request.user.assigned_cell_group.id
+            )
+    
+    context = {'form': form}
+    return render(request, 'members/member_form.html', context)
+
+
+@login_required(login_url='login')
+def member_edit_view(request, pk):
+    """Edit member information."""
+    member = get_object_or_404(Member, pk=pk)
+    
+    # Check permissions
+    if not can_manage_member(request.user, member):
+        messages.error(request, 'You do not have permission to edit this member.')
+        return redirect('members:member_list')
+    
+    if request.method == 'POST':
+        form = MemberForm(request.POST, instance=member)
+        if form.is_valid():
+            member = form.save()
+            
+            log_activity(
+                user=request.user,
+                action='edit',
+                entity_type='member',
+                description=f'Edited member: {member.get_full_name()}',
+                entity_id=member.id,
+                request=request
+            )
+            
+            messages.success(request, 'Member information updated successfully!')
+            return redirect('members:member_detail', pk=member.id)
+    else:
+        form = MemberForm(instance=member)
+        # If cell leader, limit to their cell group
+        if request.user.is_cell_leader() and request.user.assigned_cell_group:
+            form.fields['cell_group'].queryset = CellGroup.objects.filter(
+                id=request.user.assigned_cell_group.id
+            )
+    
+    context = {'form': form, 'member': member}
+    return render(request, 'members/member_form.html', context)
+
+
+@login_required(login_url='login')
+def member_delete_view(request, pk):
+    """Delete/deactivate a member."""
+    member = get_object_or_404(Member, pk=pk)
+    
+    # Check permissions
+    if not request.user.is_admin():
+        messages.error(request, 'Only administrators can delete members.')
+        return redirect('members:member_list')
+    
+    if request.method == 'POST':
+        member_name = member.get_full_name()
+        member.is_active = False
+        member.save()
+        
+        log_activity(
+            user=request.user,
+            action='delete',
+            entity_type='member',
+            description=f'Deactivated member: {member_name}',
+            entity_id=member.id,
+            request=request
+        )
+        
+        messages.success(request, f'Member {member_name} has been deactivated.')
+        return redirect('members:member_list')
+    
+    context = {'member': member}
+    return render(request, 'members/member_delete.html', context)
+
+
+@login_required(login_url='login')
+def bulk_member_action_view(request):
+    """Perform bulk actions on members."""
+    if not request.user.is_admin():
+        messages.error(request, 'Only administrators can perform bulk actions.')
+        return redirect('members:member_list')
+    
+    members_ids = request.GET.getlist('members')
+    
+    if request.method == 'POST':
+        form = BulkMemberActionForm(request.POST)
+        if form.is_valid():
+            action = form.cleaned_data['action']
+            target_cell_group = form.cleaned_data.get('target_cell_group')
+            
+            members = Member.objects.filter(id__in=members_ids, is_active=True)
+            
+            if action == 'transfer_group' and target_cell_group:
+                members.update(cell_group=target_cell_group)
+                log_activity(
+                    user=request.user,
+                    action='edit',
+                    entity_type='member',
+                    description=f'Transferred {members.count()} members to {target_cell_group.name}',
+                    request=request
+                )
+                messages.success(request, f'{members.count()} members transferred successfully!')
+            
+            elif action == 'mark_baptized':
+                members.update(is_baptized=True)
+                log_activity(
+                    user=request.user,
+                    action='edit',
+                    entity_type='member',
+                    description=f'Marked {members.count()} members as baptized',
+                    request=request
+                )
+                messages.success(request, f'{members.count()} members marked as baptized!')
+            
+            elif action == 'mark_married':
+                members.update(is_married=True)
+                log_activity(
+                    user=request.user,
+                    action='edit',
+                    entity_type='member',
+                    description=f'Marked {members.count()} members as married',
+                    request=request
+                )
+                messages.success(request, f'{members.count()} members marked as married!')
+            
+            elif action == 'deactivate':
+                members.update(is_active=False)
+                log_activity(
+                    user=request.user,
+                    action='edit',
+                    entity_type='member',
+                    description=f'Deactivated {members.count()} members',
+                    request=request
+                )
+                messages.success(request, f'{members.count()} members deactivated!')
+            
+            elif action == 'activate':
+                members.update(is_active=True)
+                log_activity(
+                    user=request.user,
+                    action='edit',
+                    entity_type='member',
+                    description=f'Activated {members.count()} members',
+                    request=request
+                )
+                messages.success(request, f'{members.count()} members activated!')
+            
+            return redirect('members:member_list')
+    else:
+        form = BulkMemberActionForm()
+    
+    members = Member.objects.filter(id__in=members_ids, is_active=True)
+    context = {
+        'form': form,
+        'members': members,
+        'members_ids': ','.join(members_ids),
+    }
+    
+    return render(request, 'members/bulk_action.html', context)
+
+
+# Cell Group Views (Admin only)
+
+@login_required(login_url='login')
+def cell_group_list_view(request):
+    """Display list of cell groups."""
+    if not request.user.is_admin():
+        messages.error(request, 'Only administrators can view cell groups.')
+        return redirect('members:member_list')
+    
+    cell_groups = CellGroup.objects.filter(is_active=True).annotate(
+        member_count=Count('members', filter=Q(members__is_active=True))
+    )
+    
+    search_query = request.GET.get('search', '')
+    if search_query:
+        cell_groups = cell_groups.filter(
+            Q(name__icontains=search_query) |
+            Q(location__icontains=search_query)
+        )
+    
+    context = {
+        'cell_groups': cell_groups,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'members/cell_group_list.html', context)
+
+
+@login_required(login_url='login')
+def cell_group_detail_view(request, pk):
+    """Display cell group details."""
+    if not request.user.is_admin():
+        messages.error(request, 'Only administrators can view cell group details.')
+        return redirect('members:member_list')
+    
+    cell_group = get_object_or_404(CellGroup, pk=pk)
+    members = cell_group.members.filter(is_active=True)
+    
+    context = {
+        'cell_group': cell_group,
+        'members': members,
+        'member_count': members.count(),
+    }
+    
+    return render(request, 'members/cell_group_detail.html', context)
+
+
+@login_required(login_url='login')
+def cell_group_create_view(request):
+    """Create a new cell group."""
+    if not request.user.is_admin():
+        messages.error(request, 'Only administrators can create cell groups.')
+        return redirect('members:member_list')
+    
+    if request.method == 'POST':
+        form = CellGroupForm(request.POST)
+        if form.is_valid():
+            cell_group = form.save()
+            
+            log_activity(
+                user=request.user,
+                action='create',
+                entity_type='cell_group',
+                description=f'Created cell group: {cell_group.name}',
+                entity_id=cell_group.id,
+                request=request
+            )
+            
+            messages.success(request, f'Cell group {cell_group.name} created successfully!')
+            return redirect('members:cell_group_detail', pk=cell_group.id)
+    else:
+        form = CellGroupForm()
+    
+    context = {'form': form}
+    return render(request, 'members/cell_group_form.html', context)
+
+
+@login_required(login_url='login')
+def cell_group_edit_view(request, pk):
+    """Edit cell group."""
+    if not request.user.is_admin():
+        messages.error(request, 'Only administrators can edit cell groups.')
+        return redirect('members:member_list')
+    
+    cell_group = get_object_or_404(CellGroup, pk=pk)
+    
+    if request.method == 'POST':
+        form = CellGroupForm(request.POST, instance=cell_group)
+        if form.is_valid():
+            cell_group = form.save()
+            
+            log_activity(
+                user=request.user,
+                action='edit',
+                entity_type='cell_group',
+                description=f'Edited cell group: {cell_group.name}',
+                entity_id=cell_group.id,
+                request=request
+            )
+            
+            messages.success(request, 'Cell group updated successfully!')
+            return redirect('members:cell_group_detail', pk=cell_group.id)
+    else:
+        form = CellGroupForm(instance=cell_group)
+    
+    context = {'form': form, 'cell_group': cell_group}
+    return render(request, 'members/cell_group_form.html', context)

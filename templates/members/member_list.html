@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}Member List - Church CMS{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="container-fluid">
+        <div class="page-header">
+            <h1><i class="fas fa-users"></i> Members</h1>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Search & Filter</h5>
+                        {% if user.is_cell_leader or user.is_admin %}
+                        <a href="{% url 'members:member_create' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-user-plus"></i> Add New Member
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-3">
+                                <input type="text" name="search" class="form-control" placeholder="Search by name, email, phone" value="{{ search_query }}">
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.gender }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.is_baptized }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.is_married }}
+                            </div>
+                            <div class="col-md-3">
+                                {% if user.is_admin %}
+                                {{ form.cell_group }}
+                                {% endif %}
+                            </div>
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Search
+                                </button>
+                                <a href="{% url 'members:member_list' %}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Clear
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Members ({{ members.count }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Cell Group</th>
+                                <th>Gender</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in members %}
+                            <tr>
+                                <td><strong>{{ member.get_full_name }}</strong></td>
+                                <td>{{ member.phone_number }}</td>
+                                <td>{{ member.email }}</td>
+                                <td>{{ member.cell_group|default:"—" }}</td>
+                                <td>
+                                    {% if member.gender == 'M' %}
+                                    <i class="fas fa-mars text-primary"></i> Male
+                                    {% else %}
+                                    <i class="fas fa-venus text-danger"></i> Female
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if member.is_baptized %}
+                                    <span class="badge badge-success"><i class="fas fa-check"></i> Baptized</span>
+                                    {% endif %}
+                                    {% if member.is_married %}
+                                    <span class="badge badge-info"><i class="fas fa-ring"></i> Married</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'members:member_detail' member.id %}" class="btn btn-sm btn-primary" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% if user.is_admin or user.is_cell_leader %}
+                                    <a href="{% url 'members:member_edit' member.id %}" class="btn btn-sm btn-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox" style="font-size: 2rem;"></i>
+                                    <p>No members found</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

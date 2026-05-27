@@ -1,0 +1,229 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if form.instance.pk %}Edit Member{% else %}Add New Member{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        {% if form.instance.pk %}
+                            <i class="fas fa-edit"></i> Edit Member: {{ form.instance.get_full_name }}
+                        {% else %}
+                            <i class="fas fa-user-plus"></i> Add New Member
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    {{ form.first_name.label_tag }}
+                                    {{ form.first_name }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger">{{ form.first_name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    {{ form.last_name.label_tag }}
+                                    {{ form.last_name }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger">{{ form.last_name.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    {{ form.date_of_birth.label_tag }}
+                                    {{ form.date_of_birth }}
+                                    {% if form.date_of_birth.errors %}
+                                        <div class="text-danger">{{ form.date_of_birth.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    {{ form.gender.label_tag }}
+                                    {{ form.gender }}
+                                    {% if form.gender.errors %}
+                                        <div class="text-danger">{{ form.gender.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    {{ form.phone_number.label_tag }}
+                                    {{ form.phone_number }}
+                                    {% if form.phone_number.errors %}
+                                        <div class="text-danger">{{ form.phone_number.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    {{ form.email.label_tag }}
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger">{{ form.email.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            {{ form.residential_address.label_tag }}
+                            {{ form.residential_address }}
+                            {% if form.residential_address.errors %}
+                                <div class="text-danger">{{ form.residential_address.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    {{ form.occupation.label_tag }}
+                                    {{ form.occupation }}
+                                    {% if form.occupation.errors %}
+                                        <div class="text-danger">{{ form.occupation.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    {{ form.cell_group.label_tag }}
+                                    {{ form.cell_group }}
+                                    {% if form.cell_group.errors %}
+                                        <div class="text-danger">{{ form.cell_group.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    {{ form.date_joined_church.label_tag }}
+                                    {{ form.date_joined_church }}
+                                    {% if form.date_joined_church.errors %}
+                                        <div class="text-danger">{{ form.date_joined_church.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <h5>Baptism Information</h5>
+                        
+                        <div class="form-check mb-3">
+                            {{ form.is_baptized }}
+                            <label class="form-check-label" for="{{ form.is_baptized.id_for_label }}">
+                                {{ form.is_baptized.label }}
+                            </label>
+                        </div>
+                        
+                        <div id="baptism-fields" style="display: {% if form.is_baptized.value %}block{% else %}none{% endif %};">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        {{ form.baptism_certificate_number.label_tag }}
+                                        {{ form.baptism_certificate_number }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        {{ form.baptism_date.label_tag }}
+                                        {{ form.baptism_date }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <h5>Marriage Information</h5>
+                        
+                        <div class="form-check mb-3">
+                            {{ form.is_married }}
+                            <label class="form-check-label" for="{{ form.is_married.id_for_label }}">
+                                {{ form.is_married.label }}
+                            </label>
+                        </div>
+                        
+                        <div id="marriage-fields" style="display: {% if form.is_married.value %}block{% else %}none{% endif %};">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        {{ form.marriage_certificate_number.label_tag }}
+                                        {{ form.marriage_certificate_number }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        {{ form.marriage_date.label_tag }}
+                                        {{ form.marriage_date }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mb-3">
+                                {{ form.spouse_name.label_tag }}
+                                {{ form.spouse_name }}
+                            </div>
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            {{ form.notes.label_tag }}
+                            {{ form.notes }}
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Member
+                            </button>
+                            <a href="{% url 'members:member_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Toggle baptism fields
+    document.getElementById('{{ form.is_baptized.id_for_label }}').addEventListener('change', function() {
+        var baptismFields = document.getElementById('baptism-fields');
+        if (this.checked) {
+            baptismFields.style.display = 'block';
+        } else {
+            baptismFields.style.display = 'none';
+        }
+    });
+    
+    // Toggle marriage fields
+    document.getElementById('{{ form.is_married.id_for_label }}').addEventListener('change', function() {
+        var marriageFields = document.getElementById('marriage-fields');
+        if (this.checked) {
+            marriageFields.style.display = 'block';
+        } else {
+            marriageFields.style.display = 'none';
+        }
+    });
+</script>
+{% endblock %}

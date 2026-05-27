@@ -1,0 +1,315 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - Charismatic Redeemed Ministries Church CMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                    url('{% static "images/church-hero.jpg" %}');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        min-height: 600px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-top: -1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .hero-content {
+        text-align: center;
+        max-width: 800px;
+        padding: 2rem;
+    }
+    
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .hero-subtitle {
+        font-size: 1.3rem;
+        margin-bottom: 2rem;
+        opacity: 0.95;
+    }
+    
+    .feature-section {
+        padding: 4rem 0;
+        background-color: #f8f9fa;
+    }
+    
+    .feature-card {
+        text-align: center;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    }
+    
+    .feature-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #1c90ff 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: white;
+    }
+    
+    .feature-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+    
+    .feature-description {
+        color: #666;
+        line-height: 1.6;
+    }
+    
+    .stats-section {
+        background: linear-gradient(135deg, #667eea 0%, #1c90ff 100%);
+        color: white;
+        padding: 4rem 0;
+    }
+    
+    .stat-card {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+    
+    .cta-section {
+        padding: 4rem 0;
+        text-align: center;
+    }
+    
+    .btn-custom-primary {
+        background: linear-gradient(135deg, #667eea 0%, #1c90ff 100%);
+        color: white;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        margin: 0 10px;
+        transition: transform 0.3s ease;
+    }
+    
+    .btn-custom-primary:hover {
+        transform: translateY(-2px);
+        color: white;
+        box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+    }
+    
+    .btn-custom-secondary {
+        background: transparent;
+        color: #667eea;
+        border: 2px solid #667eea;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        margin: 0 10px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-custom-secondary:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    @media (max-width: 768px) {
+        .hero-title {
+            font-size: 2rem;
+        }
+        
+        .hero-subtitle {
+            font-size: 1rem;
+        }
+        
+        .stat-number {
+            font-size: 1.8rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    {% if user.is_authenticated %}
+        <script>
+            window.location.href = "{% url 'dashboard:dashboard' %}";
+        </script>
+    {% else %}
+        <!-- Hero Section with Background Image -->
+        <div class="hero-section">
+            <div class="hero-content">
+                <h1 class="hero-title">Welcome to Church CMS</h1>
+                <p class="hero-subtitle">Charismatic Redeemed Ministries International</p>
+                <p class="lead">Empowering churches through digital transformation</p>
+            </div>
+        </div>
+        
+        <!-- Features Section -->
+        <div class="feature-section">
+            <div class="container">
+                <div class="text-center mb-5">
+                    <h2 style="color: #333; margin-bottom: 0.5rem;">Comprehensive Church Management</h2>
+                    <p style="color: #666;">Everything you need to manage your church effectively</p>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h3 class="feature-title">Member Management</h3>
+                            <p class="feature-description">
+                                Digitally register and manage church members, track their spiritual journey, and maintain comprehensive records.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-church"></i>
+                            </div>
+                            <h3 class="feature-title">Cell Groups</h3>
+                            <p class="feature-description">
+                                Organize members into cell groups, assign leaders, and monitor group activities and growth.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3 class="feature-title">Analytics & Reports</h3>
+                            <p class="feature-description">
+                                Generate detailed reports, track growth trends, and gain insights into church demographics.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h3 class="feature-title">Role-Based Access</h3>
+                            <p class="feature-description">
+                                Secure system with role-based permissions for administrators, cell leaders, and viewers.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <h3 class="feature-title">Spiritual Milestones</h3>
+                            <p class="feature-description">
+                                Track baptisms, marriages, and other important spiritual events in members' lives.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <h3 class="feature-title">Data Export</h3>
+                            <p class="feature-description">
+                                Export reports in multiple formats including PDF, Excel, and CSV for offline analysis.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Statistics Section -->
+        <div class="stats-section">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="stat-number">5000+</div>
+                            <div class="stat-label">Church Members</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="stat-number">50+</div>
+                            <div class="stat-label">Cell Groups</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="stat-number">100%</div>
+                            <div class="stat-label">Data Security</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="stat-card">
+                            <div class="stat-number">24/7</div>
+                            <div class="stat-label">Accessibility</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Call to Action Section -->
+        <div class="cta-section">
+            <div class="container">
+                <div class="row">
+                    <div class="col-lg-8 offset-lg-2">
+                        <h2 style="color: #333; margin-bottom: 1rem;">Ready to Transform Your Church Management?</h2>
+                        <p style="color: #666; margin-bottom: 2rem; font-size: 1.1rem;">
+                            Join us in revolutionizing how churches manage their operations and connect with members.
+                        </p>
+                        <div>
+                            <a href="{% url 'accounts:login' %}" class="btn btn-custom-primary">
+                                Login to Your Account
+                            </a>
+                            <a href="{% url 'accounts:register' %}" class="btn btn-custom-secondary">
+                                Create New Account
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Church CMS{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-user-circle"></i> My Profile</h1>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Profile Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>First Name:</strong>
+                                <p>{{ user.first_name }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Last Name:</strong>
+                                <p>{{ user.last_name }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Username:</strong>
+                                <p>{{ user.username }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Email:</strong>
+                                <p>{{ user.email }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Phone:</strong>
+                                <p>{{ user.phone_number|default:"Not provided" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Role:</strong>
+                                <p><span class="badge badge-primary">{{ user.get_role_display }}</span></p>
+                            </div>
+                        </div>
+                        
+                        {% if user.is_cell_leader %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Cell Group:</strong>
+                                <p>{{ user.assigned_cell_group|default:"Not assigned" }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Member Since:</strong>
+                                <p>{{ user.created_at|date:"F d, Y" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Last Updated:</strong>
+                                <p>{{ user.updated_at|date:"F d, Y \a\t H:i" }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <a href="{% url 'accounts:profile_edit' %}" class="btn btn-primary">
+                                <i class="fas fa-edit"></i> Edit Profile
+                            </a>
+                            <a href="{% url 'accounts:change_password' %}" class="btn btn-secondary">
+                                <i class="fas fa-key"></i> Change Password
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

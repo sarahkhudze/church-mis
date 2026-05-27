@@ -1,0 +1,359 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Church CMS{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="container-fluid">
+        <div class="page-header">
+            <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+            <p class="text-muted">Welcome, {{ user.get_full_name }}!</p>
+        </div>
+        
+        {% if is_admin %}
+        <!-- Admin Dashboard -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ total_members }}</div>
+                    <div class="label">Total Members</div>
+                    <small class="text-muted"><i class="fas fa-users"></i></small>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ total_cell_groups }}</div>
+                    <div class="label">Cell Groups</div>
+                    <small class="text-muted"><i class="fas fa-project-diagram"></i></small>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ baptized_members }}</div>
+                    <div class="label">Baptized</div>
+                    <small class="text-muted"><i class="fas fa-water"></i></small>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ married_members }}</div>
+                    <div class="label">Married</div>
+                    <small class="text-muted"><i class="fas fa-ring"></i></small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gender Distribution -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Gender Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="number text-primary">{{ male_count }}</div>
+                                    <div class="label"><i class="fas fa-mars"></i> Male</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="number text-danger">{{ female_count }}</div>
+                                    <div class="label"><i class="fas fa-venus"></i> Female</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top Cell Groups -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Top Cell Groups</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Group Name</th>
+                                        <th class="text-end">Members</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for group in cell_groups_stats %}
+                                    <tr>
+                                        <td>{{ group.name }}</td>
+                                        <td class="text-end"><span class="badge badge-primary">{{ group.member_count }}</span></td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted">No cell groups yet</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Members -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Recent Members</h5>
+                        <a href="{% url 'members:member_list' %}" class="btn btn-sm btn-primary">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Cell Group</th>
+                                        <th>Date Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in recent_members %}
+                                    <tr>
+                                        <td>{{ member.get_full_name }}</td>
+                                        <td>{{ member.cell_group|default:"—" }}</td>
+                                        <td>{{ member.created_at|date:"M d, Y" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No recent members</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Birthdays This Month -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-birthday-cake"></i> Birthdays This Month</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Date of Birth</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in birthdays_this_month %}
+                                    <tr>
+                                        <td>{{ member.get_full_name }}</td>
+                                        <td>{{ member.date_of_birth|date:"M d" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted">No birthdays this month</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Description</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for activity in recent_activities %}
+                            <tr>
+                                <td>{{ activity.user.get_full_name }}</td>
+                                <td><span class="badge badge-info">{{ activity.get_action_display }}</span></td>
+                                <td>{{ activity.description }}</td>
+                                <td>{{ activity.timestamp|date:"M d, Y H:i" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No recent activities</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        {% elif is_cell_leader %}
+        <!-- Cell Leader Dashboard -->
+        <div class="row mb-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ total_members }}</div>
+                    <div class="label">Members in Your Group</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ baptized_members }}</div>
+                    <div class="label">Baptized Members</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ married_members }}</div>
+                    <div class="label">Married Members</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gender Distribution -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Gender Distribution</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="number text-primary">{{ male_count }}</div>
+                                    <div class="label"><i class="fas fa-mars"></i> Male</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="number text-danger">{{ female_count }}</div>
+                                    <div class="label"><i class="fas fa-venus"></i> Female</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <a href="{% url 'members:member_create' %}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-user-plus"></i> Add New Member
+                        </a>
+                        <a href="{% url 'members:member_list' %}" class="btn btn-secondary w-100 mb-2">
+                            <i class="fas fa-list"></i> View All Members
+                        </a>
+                        <a href="{% url 'reports:member_report' %}" class="btn btn-info w-100">
+                            <i class="fas fa-file-alt"></i> Generate Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Members -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent Members</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Phone</th>
+                                        <th>Date Joined</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in recent_members %}
+                                    <tr>
+                                        <td>{{ member.get_full_name }}</td>
+                                        <td>{{ member.phone_number }}</td>
+                                        <td>{{ member.created_at|date:"M d, Y" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No recent members</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Birthdays This Month -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-birthday-cake"></i> Birthdays This Month</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for member in birthdays_this_month %}
+                                    <tr>
+                                        <td>{{ member.get_full_name }}</td>
+                                        <td>{{ member.date_of_birth|date:"M d" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="2" class="text-center text-muted">No birthdays this month</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Viewer Dashboard -->
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> You have limited access to the system. Contact an administrator for more permissions.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

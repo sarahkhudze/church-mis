@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports - Church CMS{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="page-header mb-4">
+        <h1><i class="fas fa-chart-bar"></i> Reports Dashboard</h1>
+        <p class="text-muted">Generate and export church reports</p>
+    </div>
+    
+    <div class="row">
+        <!-- Member Report Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Member Report</h5>
+                </div>
+                <div class="card-body">
+                    <p>Generate comprehensive member reports with filtering options including:</p>
+                    <ul>
+                        <li>Filter by gender, baptism status, marriage status</li>
+                        <li>Filter by cell group</li>
+                        <li>Age range filtering</li>
+                        <li>Export to PDF, Excel, or CSV</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'reports:member_report' %}" class="btn btn-primary w-100">
+                        <i class="fas fa-chart-line"></i> Generate Member Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Cell Group Report Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-church"></i> Cell Group Report</h5>
+                </div>
+                <div class="card-body">
+                    <p>View cell group statistics including:</p>
+                    <ul>
+                        <li>Member count per cell group</li>
+                        <li>Baptized members per group</li>
+                        <li>Group locations and leaders</li>
+                        <li>Export to PDF, Excel, or CSV</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'reports:cell_group_report' %}" class="btn btn-success w-100">
+                        <i class="fas fa-church"></i> Generate Cell Group Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Baptism Report Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-water"></i> Baptism Report</h5>
+                </div>
+                <div class="card-body">
+                    <p>Track baptism statistics including:</p>
+                    <ul>
+                        <li>List of baptized members</li>
+                        <li>Baptism dates and certificate numbers</li>
+                        <li>Baptism locations</li>
+                        <li>Export to PDF, Excel, or CSV</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'reports:baptism_report' %}" class="btn btn-info w-100">
+                        <i class="fas fa-water"></i> Generate Baptism Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Marriage Report Card -->
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-ring"></i> Marriage Report</h5>
+                </div>
+                <div class="card-body">
+                    <p>View marriage statistics including:</p>
+                    <ul>
+                        <li>List of married members</li>
+                        <li>Marriage dates and certificate numbers</li>
+                        <li>Spouse information</li>
+                        <li>Export to PDF, Excel, or CSV</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'reports:marriage_report' %}" class="btn btn-warning w-100">
+                        <i class="fas fa-ring"></i> Generate Marriage Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Growth Report Card (Admin only) -->
+        {% if user.is_admin %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Growth Report</h5>
+                </div>
+                <div class="card-body">
+                    <p>Analyze church growth trends:</p>
+                    <ul>
+                        <li>Monthly membership growth</li>
+                        <li>Year-over-year comparison</li>
+                        <li>Growth projections</li>
+                        <li>Export to PDF, Excel, or CSV</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'reports:growth_report' %}" class="btn btn-secondary w-100">
+                        <i class="fas fa-chart-line"></i> Generate Growth Report
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Quick Stats Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Quick Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="number" id="total-members">-</div>
+                                <div class="label">Total Members</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="number" id="total-groups">-</div>
+                                <div class="label">Cell Groups</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="number" id="baptized-count">-</div>
+                                <div class="label">Baptized Members</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <div class="number" id="married-count">-</div>
+                                <div class="label">Married Members</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Fetch quick statistics via AJAX
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('/api/stats/')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-members').textContent = data.total_members || 0;
+                document.getElementById('total-groups').textContent = data.total_groups || 0;
+                document.getElementById('baptized-count').textContent = data.baptized_count || 0;
+                document.getElementById('married-count').textContent = data.married_count || 0;
+            })
+            .catch(error => console.error('Error fetching stats:', error));
+    });
+</script>
+
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin: 0.5rem;
+        transition: transform 0.3s ease;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stat-card .number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-card .label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
