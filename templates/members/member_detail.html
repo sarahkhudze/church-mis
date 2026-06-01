@@ -29,13 +29,29 @@
                                 <p><strong>Baptism Date:</strong> {{ member.baptism_date }}</p>
                                 <p><strong>Baptism Certificate:</strong> {{ member.baptism_certificate_number }}</p>
                             {% endif %}
-                            <p><strong>Married:</strong> {% if member.is_married %}Yes{% else %}No{% endif %}</p>
+                            <p><strong>Marital Status:</strong> 
+                                {% if member.is_married %}
+                                    Married
+                                {% else %}
+                                    {{ member.get_marital_status_display }}
+                                {% endif %}
+                            </p>
                             {% if member.is_married %}
                                 <p><strong>Marriage Date:</strong> {{ member.marriage_date }}</p>
                                 <p><strong>Spouse:</strong> {{ member.spouse_name }}</p>
+                                <p><strong>Marriage Certificate:</strong> {{ member.marriage_certificate_number }}</p>
                             {% endif %}
                         </div>
                     </div>
+                    
+                    {% if member.notes %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <p><strong>Notes:</strong> {{ member.notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
                     <div class="mt-3">
                         <a href="{% url 'members:member_edit' member.id %}" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Edit

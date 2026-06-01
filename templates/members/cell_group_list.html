@@ -21,7 +21,7 @@
                 <div class="card-body">
                     <p><strong>Location:</strong> {{ group.location }}</p>
                     <p><strong>Leader:</strong> {{ group.leader.get_full_name|default:"Not Assigned" }}</p>
-                    <p><strong>Members:</strong> {{ group.member_count }}</p>
+                    <p><strong>Members:</strong> {{ group.total_members }}</p>
                     <p><strong>Meeting Day:</strong> {{ group.meeting_day|default:"Not Set" }}</p>
                     <p><strong>Meeting Time:</strong> {{ group.meeting_time|default:"Not Set" }}</p>
                     {% if group.description %}

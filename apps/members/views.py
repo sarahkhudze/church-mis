@@ -306,6 +306,31 @@ def bulk_member_action_view(request):
 
 # Cell Group Views (Admin only)
 
+# @login_required(login_url='login')
+# def cell_group_list_view(request):
+#     """Display list of cell groups."""
+#     if not request.user.is_admin():
+#         messages.error(request, 'Only administrators can view cell groups.')
+#         return redirect('members:member_list')
+    
+#     cell_groups = CellGroup.objects.filter(is_active=True).annotate(
+#         member_count=Count('members', filter=Q(members__is_active=True))
+#     )
+    
+#     search_query = request.GET.get('search', '')
+#     if search_query:
+#         cell_groups = cell_groups.filter(
+#             Q(name__icontains=search_query) |
+#             Q(location__icontains=search_query)
+#         )
+    
+#     context = {
+#         'cell_groups': cell_groups,
+#         'search_query': search_query,
+#     }
+    
+#     return render(request, 'members/cell_group_list.html', context)
+
 @login_required(login_url='login')
 def cell_group_list_view(request):
     """Display list of cell groups."""
@@ -313,8 +338,9 @@ def cell_group_list_view(request):
         messages.error(request, 'Only administrators can view cell groups.')
         return redirect('members:member_list')
     
+    # Use 'total_members' instead of 'member_count' to avoid conflicts
     cell_groups = CellGroup.objects.filter(is_active=True).annotate(
-        member_count=Count('members', filter=Q(members__is_active=True))
+        total_members=Count('members', filter=Q(members__is_active=True))
     )
     
     search_query = request.GET.get('search', '')
@@ -330,8 +356,6 @@ def cell_group_list_view(request):
     }
     
     return render(request, 'members/cell_group_list.html', context)
-
-
 @login_required(login_url='login')
 def cell_group_detail_view(request, pk):
     """Display cell group details."""

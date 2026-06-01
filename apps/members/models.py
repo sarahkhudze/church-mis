@@ -53,6 +53,12 @@ class Member(models.Model):
     
     # Marriage Information
     is_married = models.BooleanField(default=False)
+    marital_status = models.CharField(
+        max_length=20,
+        choices=MARITAL_STATUS_CHOICES,
+        default='single',
+        help_text='Marital status of the member'
+    )
     marriage_certificate_number = models.CharField(
         max_length=100,
         blank=True,
@@ -92,6 +98,14 @@ class Member(models.Model):
             models.Index(fields=['date_of_birth']),
         ]
         unique_together = [('phone_number', 'email')]
+    
+    def save(self, *args, **kwargs):
+        """Override save to set marital_status based on is_married."""
+        if self.is_married:
+            self.marital_status = 'married'
+        else:
+            self.marital_status = 'single'
+        super().save(*args, **kwargs)
     
     def __str__(self):
         cell_group_name = self.cell_group.name if self.cell_group else 'No Cell Group'

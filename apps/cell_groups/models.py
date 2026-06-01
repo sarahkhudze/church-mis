@@ -36,16 +36,14 @@ class CellGroup(models.Model):
     def __str__(self):
         return self.name
     
-    @property
-    def member_count(self):
+    def get_member_count(self):
         """Get the number of members in this cell group."""
-        from apps.members.models import Member  # Import here to avoid circular import
+        from apps.members.models import Member
         return Member.objects.filter(cell_group=self, is_active=True).count()
     
-    @property
-    def baptized_count(self):
+    def get_baptized_count(self):
         """Get the number of baptized members in this cell group."""
-        from apps.members.models import Member  # Import here to avoid circular import
+        from apps.members.models import Member
         return Member.objects.filter(cell_group=self, is_active=True, is_baptized=True).count()
     
     @property
@@ -57,7 +55,7 @@ class CellGroup(models.Model):
 
 
 class CellGroupTransfer(models.Model):
-    from apps.members.models import Member  # Import here to avoid circular import
+    from apps.members.models import Member
     
     member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='transfers')
     from_cell_group = models.ForeignKey(

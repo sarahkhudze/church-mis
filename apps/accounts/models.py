@@ -90,6 +90,13 @@ class CustomUser(AbstractUser):
             models.Index(fields=['is_active_user']),
         ]
     
+    def save(self, *args, **kwargs):
+        """Override save to ensure admins and superusers are always approved."""
+        # Auto-approve admin users and superusers
+        if self.role == 'admin' or self.is_superuser:
+            self.status = 'approved'
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         full_name = self.get_full_name()
         if full_name:
@@ -98,7 +105,7 @@ class CustomUser(AbstractUser):
     
     def is_admin(self):
         """Check if user is an administrator."""
-        return self.role == 'admin'
+        return self.role == 'admin' or self.is_superuser
     
     def is_cell_leader(self):
         """Check if user is a cell group leader."""
@@ -106,11 +113,11 @@ class CustomUser(AbstractUser):
     
     def is_approved(self):
         """Check if user account is approved."""
-        return self.status == 'approved'
+        return self.status == 'approved' or self.is_superuser
     
     def is_pending(self):
         """Check if user account is pending approval."""
-        return self.status == 'pending'
+        return self.status == 'pending' and not self.is_superuser and self.role != 'admin'
     
     def can_manage_all_members(self):
         """Check if user can manage all members (admin only)."""
