@@ -173,6 +173,9 @@ def can_manage_member(user, member):
     """Check if user can manage a specific member."""
     if user.is_admin():
         return True
+
+    if user.is_zone_leader() and user.zone_name:
+        return member.cell_group and member.cell_group.zone_name == user.zone_name
     
     if user.is_cell_leader():
         return member.cell_group == user.assigned_cell_group
@@ -185,9 +188,11 @@ def get_user_members(user):
     from apps.members.models import Member
     
     if user.is_admin():
-        return Member.objects.all()
+        return Member.objects.active()
+    elif user.is_zone_leader() and user.zone_name:
+        return Member.objects.filter(cell_group__zone_name=user.zone_name).active()
     elif user.is_cell_leader() and user.assigned_cell_group:
-        return user.assigned_cell_group.members.all()
+        return user.assigned_cell_group.members.active()
     
     return Member.objects.none()
 
@@ -198,6 +203,8 @@ def get_user_cell_groups(user):
     
     if user.is_admin():
         return CellGroup.objects.all()
+    elif user.is_zone_leader() and user.zone_name:
+        return CellGroup.objects.filter(zone_name=user.zone_name)
     elif user.is_cell_leader() and user.assigned_cell_group:
         return CellGroup.objects.filter(id=user.assigned_cell_group.id)
     

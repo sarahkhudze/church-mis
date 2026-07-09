@@ -40,6 +40,14 @@
                         </div>
                         
                         <div class="form-group mb-3">
+                            {{ form.zone.label_tag }}
+                            {{ form.zone }}
+                            {% if form.zone.errors %}
+                                <div class="text-danger">{{ form.zone.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
                             {{ form.leader.label_tag }}
                             {{ form.leader }}
                             {% if form.leader.errors %}
@@ -47,20 +55,53 @@
                             {% endif %}
                         </div>
                         
+                        <!-- Meeting Frequency -->
                         <div class="form-group mb-3">
-                            {{ form.meeting_day.label_tag }}
-                            {{ form.meeting_day }}
-                            {% if form.meeting_day.errors %}
-                                <div class="text-danger">{{ form.meeting_day.errors }}</div>
+                            <label for="{{ form.meeting_frequency.id_for_label }}">How many times do you meet per week?</label>
+                            {{ form.meeting_frequency }}
+                            {% if form.meeting_frequency.errors %}
+                                <div class="text-danger">{{ form.meeting_frequency.errors }}</div>
                             {% endif %}
+                            <small class="form-text text-muted">Enter 1 for once a week, 2 for twice a week, etc.</small>
                         </div>
                         
-                        <div class="form-group mb-3">
-                            {{ form.meeting_time.label_tag }}
-                            {{ form.meeting_time }}
-                            {% if form.meeting_time.errors %}
-                                <div class="text-danger">{{ form.meeting_time.errors }}</div>
-                            {% endif %}
+                        <!-- Dynamic Meeting Times Section -->
+                        <div id="dynamic-meeting-section" class="mb-3">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle"></i> 
+                                Based on your frequency, specify meeting days and times below.
+                            </div>
+
+                            <!-- Base meeting (always shown for frequency >= 1) -->
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Primary Meeting</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <label>Meeting Day</label>
+                                            {{ form.meeting_day }}
+                                            {% if form.meeting_day.errors %}<div class="text-danger">{{ form.meeting_day.errors }}</div>{% endif %}
+                                        </div>
+                                        <div class="col-md-6 mb-2">
+                                            <label>Meeting Time</label>
+                                            {{ form.meeting_time }}
+                                            {% if form.meeting_time.errors %}<div class="text-danger">{{ form.meeting_time.errors }}</div>{% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional meetings (shown dynamically when frequency > 1) -->
+                            <div id="additional-meetings-container">
+                                <!-- Will be populated by JavaScript -->
+                            </div>
+
+                            <!-- Add button -->
+                            <button type="button" id="add-meeting-btn" class="btn btn-outline-secondary btn-sm mb-2">
+                                <i class="fas fa-plus"></i> Add Additional Meeting Time
+                            </button>
                         </div>
                         
                         <div class="form-group mb-3">
@@ -68,6 +109,14 @@
                             {{ form.description }}
                             {% if form.description.errors %}
                                 <div class="text-danger">{{ form.description.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-group mb-3">
+                            {{ form.approval_status.label_tag }}
+                            {{ form.approval_status }}
+                            {% if form.approval_status.errors %}
+                                <div class="text-danger">{{ form.approval_status.errors }}</div>
                             {% endif %}
                         </div>
                         
@@ -85,4 +134,92 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const freqField = document.getElementById('{{ form.meeting_frequency.id_for_label }}');
+    const addBtn = document.getElementById('add-meeting-btn');
+    const container = document.getElementById('additional-meetings-container');
+    let meetingCount = 0;
+
+    // Function to create a new meeting block
+    function createMeetingBlock(index) {
+        const block = document.createElement('div');
+        block.className = 'card mb-3';
+        block.innerHTML = `
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Additional Meeting ${index + 1}</h6>
+                <button type="button" class="btn btn-sm btn-danger remove-meeting-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <label>Meeting Day</label>
+                        <select name="meeting_day_${index}" class="form-select meeting-day-field" required>
+                            <option value="">Select Day</option>
+                            <option value="Monday">Monday</option>
+                            <option value="Tuesday">Tuesday</option>
+                            <option value="Wednesday">Wednesday</option>
+                            <option value="Thursday">Thursday</option>
+                            <option value="Friday">Friday</option>
+                            <option value="Saturday">Saturday</option>
+                            <option value="Sunday">Sunday</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <label>Meeting Time</label>
+                        <input type="time" name="meeting_time_${index}" class="form-control meeting-time-field" required>
+                    </div>
+                </div>
+            </div>
+        `;
+        return block;
+    }
+
+    // Initial setup: hide additional meetings if frequency <= 1
+    function updateMeetings() {
+        const freq = parseInt(freqField.value) || 1;
+        
+        // Always keep primary meeting
+        // Show/hide additional meetings based on frequency
+        if (freq <= 1) {
+            container.innerHTML = '';
+            meetingCount = 0;
+        } else {
+            // Ensure we have exactly (freq - 1) additional meetings
+            while (container.children.length < freq - 1) {
+                container.appendChild(createMeetingBlock(meetingCount));
+                meetingCount++;
+            }
+            while (container.children.length > freq - 1) {
+                container.removeChild(container.lastChild);
+                meetingCount--;
+            }
+        }
+    }
+
+    // Event listeners
+    freqField.addEventListener('change', updateMeetings);
+    freqField.addEventListener('keyup', updateMeetings);
+
+    // Add meeting button
+    addBtn.addEventListener('click', function() {
+        meetingCount++;
+        container.appendChild(createMeetingBlock(meetingCount - 1));
+    });
+
+    // Remove meeting buttons (delegation)
+    container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-meeting-btn')) {
+            e.target.closest('.card').remove();
+            meetingCount--;
+        }
+    });
+
+    // Initialize
+    updateMeetings();
+});
+</script>
 {% endblock %}

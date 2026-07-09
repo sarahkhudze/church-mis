@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from apps.zones.models import Zone  # Add this import
 
 
 class CellGroup(models.Model):
@@ -23,9 +24,29 @@ class CellGroup(models.Model):
     description = models.TextField(blank=True)
     meeting_day = models.CharField(max_length=20, choices=MEETING_DAYS, default='Sunday')
     meeting_time = models.TimeField(null=True, blank=True, default='15:00')
+    meeting_frequency = models.PositiveIntegerField(default=1, help_text='How many times per week the group meets')
+    meeting_days = models.CharField(max_length=255, blank=True, help_text='e.g. Friday - Intercession, Sunday - Bible Study')
+    
+    # CHANGE THIS - Use Zone from apps.zones.models instead of 'accounts.Zone'
+    zone = models.ForeignKey(
+        Zone,  # Changed from 'accounts.Zone'
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='cell_groups',
+        help_text='Zone this cell group belongs to'
+    )
+    
+    zone_name = models.CharField(max_length=100, blank=True, null=True, help_text='Legacy zone name for compatibility')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+    approval_status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending Approval'), ('approved', 'Approved'), ('rejected', 'Rejected')],
+        default='approved',
+        help_text='Whether this cell group has been approved for use'
+    )
     
     class Meta:
         db_table = 'cell_groups'
@@ -35,16 +56,31 @@ class CellGroup(models.Model):
     
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if self.zone and not self.zone_name:
+            self.zone_name = self.zone.name
+        elif not self.zone and self.zone_name:
+            # CHANGE THIS - Use Zone from apps.zones.models
+            from apps.zones.models import Zone  # Changed import
+            matching_zone = Zone.objects.filter(name=self.zone_name).first()
+            if matching_zone:
+                self.zone = matching_zone
+        super().save(*args, **kwargs)
+
+    @property
+    def is_approved(self):
+        return self.approval_status == 'approved'
     
     def get_member_count(self):
         """Get the number of members in this cell group."""
         from apps.members.models import Member
-        return Member.objects.filter(cell_group=self, is_active=True).count()
+        return Member.objects.filter(cell_group=self).active().count()
     
     def get_baptized_count(self):
         """Get the number of baptized members in this cell group."""
         from apps.members.models import Member
-        return Member.objects.filter(cell_group=self, is_active=True, is_baptized=True).count()
+        return Member.objects.filter(cell_group=self, is_baptized=True).active().count()
     
     @property
     def leader_name(self):
@@ -52,6 +88,14 @@ class CellGroup(models.Model):
         if self.leader:
             return self.leader.get_full_name()
         return "Not Assigned"
+
+    @property
+    def meeting_schedule(self):
+        if self.meeting_days:
+            return self.meeting_days
+        if self.meeting_day and self.meeting_time:
+            return f"{self.meeting_day} at {self.meeting_time.strftime('%H:%M')}"
+        return "Schedule not set"
 
 
 class CellGroupTransfer(models.Model):

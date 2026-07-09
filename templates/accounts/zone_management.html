@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Zones{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-map-marked-alt"></i> Manage Zones</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" class="mb-4">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_name">Zone Name</label>
+                        {{ form.name }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="id_is_active">Active</label>
+                        <div class="form-check mt-2">{{ form.is_active }}</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="id_description">Description</label>
+                    {{ form.description }}
+                </div>
+                <button type="submit" class="btn btn-primary">Create Zone</button>
+            </form>
+
+            <h5>Existing Zones</h5>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for zone in zones %}
+                        <tr>
+                            <td>{{ zone.name }}</td>
+                            <td>{{ zone.description|default:"—" }}</td>
+                            <td>{% if zone.is_active %}Active{% else %}Inactive{% endif %}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">No zones created yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

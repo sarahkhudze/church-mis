@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Report - {{ cell_group.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="fas fa-chart-bar"></i> Attendance Report for {{ cell_group.name }}</h4>
+            <a href="{% url 'members:cell_group_detail' cell_group.id %}" class="btn btn-light">
+                <i class="fas fa-arrow-left"></i> Back to Group
+            </a>
+        </div>
+
+        <!-- Date Filter Form -->
+        <div class="card-body border-bottom">
+            <form method="get" class="mb-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="meeting_date">Filter by Meeting Date:</label>
+                        <input type="date" 
+                               name="meeting_date" 
+                               id="meeting_date" 
+                               class="form-control" 
+                               value="{{ selected_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Filter</button>
+                    </div>
+                    <div class="col-md-2">
+                        <a href="{% url 'reports:attendance_report' cell_group.id %}" 
+                           class="btn btn-outline-secondary w-100">Clear Filter</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-body">
+            {% if filtered_attendance_records %}
+                <!-- Summary Stats -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card bg-light">
+                            <div class="number text-primary">{{ total_meetings }}</div>
+                            <div class="label">Meetings</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card bg-light">
+                            <div class="number text-success">{{ total_present }}</div>
+                            <div class="label">Present</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card bg-light">
+                            <div class="number text-danger">{{ total_absent }}</div>
+                            <div class="label">Absent</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card bg-light">
+                            <div class="number text-info">{{ average_attendance_rate|floatformat:2 }}%</div>
+                            <div class="label">Avg. Rate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attendance Details Table -->
+                <h5 class="mb-3">Attendance Details</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>Member</th>
+                                {% for date in display_meeting_dates %}
+                                    <th class="text-center">{{ date|date:"M d, Y" }}</th>
+                                {% endfor %}
+                                <th class="text-center">Overall %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row_data in table_data %}
+                                <tr>
+                                    <td>{{ row_data.member.get_full_name }}</td>
+                                    {% for status in row_data.statuses %}
+                                        <td class="text-center">
+                                            {% if status == 'present' %}
+                                                <span class="badge bg-success">P</span>
+                                            {% elif status == 'absent' %}
+                                                <span class="badge bg-danger">A</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                    {% endfor %}
+                                    <td class="text-center">{{ row_data.overall_percentage|floatformat:1 }}%</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="{{ display_meeting_dates|length|add:2 }}" class="text-center text-muted">
+                                        No members found in this cell group.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Attendance by Date Summary -->
+                <h5 class="mt-4 mb-3">Attendance by Meeting Date</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Date</th>
+                                <th>Total Present</th>
+                                <th>Total Absent</th>
+                                <th>Attendance Rate</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for date, stats in attendance_by_date.items %}
+                                <tr>
+                                    <td>{{ date|date:"M d, Y" }}</td>
+                                    <td class="text-center">{{ stats.present }}</td>
+                                    <td class="text-center">{{ stats.absent }}</td>
+                                    <td class="text-center">{{ stats.rate|floatformat:1 }}%</td>
+                                    <td>{{ stats.notes|default:"—" }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted">
+                                        No attendance records available.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Export Buttons -->
+                <div class="mt-4 d-flex flex-wrap gap-2">
+                    <a href="?format=pdf" class="btn btn-danger">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </a>
+                    <a href="?format=excel" class="btn btn-success">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </a>
+                    <a href="?format=csv" class="btn btn-info">
+                        <i class="fas fa-file-csv"></i> Export CSV
+                    </a>
+                </div>
+
+            {% else %}
+                <div class="alert alert-info text-center py-4">
+                    <i class="fas fa-info-circle fs-3"></i>
+                    <p class="mt-2 mb-0">
+                        {% if selected_date %}
+                            No attendance records found for <strong>{{ selected_date|date:"M d, Y" }}</strong>.
+                        {% else %}
+                            No attendance records found for this cell group.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

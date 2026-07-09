@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}Pending Approvals{% endblock %}
+
+{% block content %}
+<!-- DEBUG: Temporary information -->
+<div class="alert alert-info">
+    <strong>Debug Info:</strong> 
+    Total zones in system: {{ zones|length }}
+    {% if zones %}
+        <br>Zone names: 
+        {% for zone in zones %}
+            "{{ zone.name }}" (ID: {{ zone.id }}),
+        {% endfor %}
+    {% else %}
+        No zones found!
+    {% endif %}
+</div>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-user-check"></i> Pending Leader Approvals</h2>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            {% if pending_users %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Registered On</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in pending_users %}
+                            <tr>
+                                <td>{{ user.get_full_name }}</td>
+                                <td>{{ user.username }}</td>
+                                <td>{{ user.email }}</td>
+                                <td>{{ user.role }}</td>
+                                <td>{{ user.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if user.role == 'zone_leader' %}
+                                        <form method="post" action="{% url 'accounts:approve_user' user.id %}">
+                                            {% csrf_token %}
+                                            <div class="mb-2">
+                                                <label for="zone_id_{{ user.id }}">Assign to Zone:</label>
+                                                <select name="zone_id" id="zone_id_{{ user.id }}" class="form-control" required>
+                                                    <option value="">Select Zone</option>
+                                                    {% for zone in zones %}
+                                                        <option value="{{ zone.id }}">{{ zone.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-success btn-sm">Approve Zone Leader</button>
+                                        </form>
+                                    {% else %}
+                                        <form method="post" action="{% url 'accounts:approve_user' user.id %}">
+                                            {% csrf_token %}
+                                            <div class="mb-2">
+                                                <label for="assigned_cell_group_{{ user.id }}">Assign to Cell Group:</label>
+                                                <select name="assigned_cell_group" id="assigned_cell_group_{{ user.id }}" class="form-control" required>
+                                                    <option value="">Select Cell Group</option>
+                                                    {% for group in cell_groups %}
+                                                        <option value="{{ group.id }}">{{ group.name }} - {{ group.location }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="btn btn-success btn-sm">Approve Leader</button>
+                                        </form>
+                                    {% endif %}
+                                    <form method="post" action="{% url 'accounts:reject_user' user.id %}" class="mt-2">
+                                        {% csrf_token %}
+                                        <textarea name="rejection_reason" placeholder="Rejection reason" class="form-control mb-1"></textarea>
+                                        <button type="submit" class="btn btn-danger btn-sm">Reject</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle"></i> No pending approvals at this time.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

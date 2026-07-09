@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block title %}Record Attendance - {{ cell_group.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0"><i class="fas fa-clipboard-check"></i> Record Attendance for {{ cell_group.name }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="form-label" for="meeting_date">Meeting Date</label>
+                    <input type="date" class="form-control" id="meeting_date" name="meeting_date" value="{{ default_date }}" required>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in members %}
+                            <tr>
+                                <td>{{ member.get_full_name }}</td>
+                                <td>
+                                    <select class="form-select" name="status_{{ member.id }}">
+                                        <option value="present">Present</option>
+                                        <option value="absent">Absent</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" name="notes_{{ member.id }}" placeholder="Optional note">
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted">No active members in this cell group.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3">
+                    <button type="submit" class="btn btn-success">Save Attendance</button>
+                    <a href="{% url 'members:cell_group_detail' cell_group.id %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

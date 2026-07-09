@@ -4,12 +4,38 @@ from django.utils import timezone
 from django.conf import settings
 
 
+class Zone(models.Model):
+    """A church zone that can be assigned to zone leaders and cell groups."""
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    leader = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='managed_zone'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'accounts_zone'
+        verbose_name = 'Zone'
+        verbose_name_plural = 'Zones'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class CustomUser(AbstractUser):
     """Custom User model extending Django's AbstractUser."""
     
     ROLE_CHOICES = [
         ('admin', 'Church Administrator'),
         ('leader', 'Cell Group Leader'),
+        ('zone_leader', 'Zone Leader'),
         ('viewer', 'Viewer (Read-only)'),
     ]
     
@@ -37,6 +63,12 @@ class CustomUser(AbstractUser):
         blank=True,
         null=True,
         help_text='User contact number'
+    )
+    zone_name = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text='Zone assigned to this zone leader'
     )
     # Use string reference to avoid circular import
     assigned_cell_group = models.ForeignKey(
@@ -110,6 +142,10 @@ class CustomUser(AbstractUser):
     def is_cell_leader(self):
         """Check if user is a cell group leader."""
         return self.role == 'leader'
+
+    def is_zone_leader(self):
+        """Check if user is a zone leader."""
+        return self.role == 'zone_leader'
     
     def is_approved(self):
         """Check if user account is approved."""
@@ -122,14 +158,24 @@ class CustomUser(AbstractUser):
     def can_manage_all_members(self):
         """Check if user can manage all members (admin only)."""
         return self.is_admin()
+
+    def can_approve_leader_requests(self):
+        """Check if user can approve cell-group leader requests."""
+        return self.is_admin() or self.is_zone_leader()
+
+    def can_approve_cell_groups(self):
+        """Check if user can approve cell-group creation requests."""
+        return self.is_admin() or self.is_zone_leader()
     
     def get_managed_members(self):
         """Get members this user can manage."""
         from apps.members.models import Member  # Import here to avoid circular import
         if self.is_admin():
-            return Member.objects.filter(is_active=True)
+            return Member.objects.active()
+        elif self.is_zone_leader() and self.zone_name:
+            return Member.objects.filter(cell_group__zone_name=self.zone_name).active()
         elif self.is_cell_leader() and self.is_approved() and self.assigned_cell_group:
-            return self.assigned_cell_group.members.filter(is_active=True)
+            return self.assigned_cell_group.members.active()
         return Member.objects.none()
     
     def get_full_name(self):

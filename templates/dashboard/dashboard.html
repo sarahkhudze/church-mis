@@ -43,6 +43,120 @@
             </div>
         </div>
         
+        <!-- ===== NEW: Zone Management Section ===== -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-layer-group"></i> Zone Management</h5>
+                        <div>
+                            <a href="{% url 'zones:zone_create' %}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus"></i> Create Zone
+                            </a>
+                            <a href="{% url 'zones:zone_list' %}" class="btn btn-info btn-sm">
+                                <i class="fas fa-list"></i> Manage Zones
+                            </a>
+                            <a href="{% url 'zones:zone_list' %}" class="btn btn-success btn-sm">
+                                <i class="fas fa-eye"></i> View All Zones
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Zone Statistics -->
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="number">{{ total_zones|default:0 }}</div>
+                                    <div class="label">Total Zones</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="number">{{ zones_without_leaders|default:0 }}</div>
+                                    <div class="label">Zones Without Leaders</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="number">{{ total_cell_groups_in_zones|default:0 }}</div>
+                                    <div class="label">Cell Groups in Zones</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stat-card">
+                                    <div class="number">{{ total_members_in_zones|default:0 }}</div>
+                                    <div class="label">Members in Zones</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Zone List -->
+                        {% if zones %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Zone Name</th>
+                                        <th>Zone Leader</th>
+                                        <th>Cell Groups</th>
+                                        <th>Members</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for zone in zones %}
+                                    <tr>
+                                        <td><strong>{{ zone.name }}</strong></td>
+                                        <td>
+                                            {% if zone.zone_leader %}
+                                                {{ zone.zone_leader.get_full_name }}
+                                            {% else %}
+                                                <span class="text-warning">Not assigned</span>
+                                                <a href="{% url 'zones:zone_edit' zone.id %}" class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-user-plus"></i>
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                        <td><span class="badge bg-info">{{ zone.annotated_cell_group_count|default:0 }}</span></td>
+                                        <td><span class="badge bg-primary">{{ zone.annotated_member_count|default:0 }}</span></td>
+                                        <td>
+                                            {% if zone.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'zones:zone_detail' zone.id %}" class="btn btn-info">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{% url 'zones:zone_edit' zone.id %}" class="btn btn-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-layer-group fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">No zones created yet.</p>
+                            <a href="{% url 'zones:zone_create' %}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Create Your First Zone
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- ===== END: Zone Management Section ===== -->
+        
         <!-- Gender Distribution -->
         <div class="row mb-4">
             <div class="col-lg-6">
@@ -231,7 +345,72 @@
                 </div>
             </div>
         </div>
+
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Cell Group Schedule</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0"><strong>{{ cell_group.name }}</strong><br>{{ cell_group.meeting_schedule }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Follow-up Alerts</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">{{ follow_up_required }} member(s) currently need follow-up.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
         
+        <!-- NEW: Quick Actions for Cell Leaders -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'members:member_create' %}" class="btn btn-primary w-100">
+                                    <i class="fas fa-user-plus"></i> Add New Member
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'members:member_list' %}" class="btn btn-secondary w-100">
+                                    <i class="fas fa-list"></i> View All Members
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'reports:member_report' %}" class="btn btn-info w-100">
+                                    <i class="fas fa-file-alt"></i> Generate Report
+                                </a>
+                            </div>
+                            <!-- ADD ATTENDANCE BUTTON -->
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'members:record_attendance' cell_group.id %}" class="btn btn-success w-100">
+                                    <i class="fas fa-clipboard-check"></i> Take Attendance
+                                </a>
+                            </div>
+                            <!-- ADD ATTENDANCE REPORT BUTTON -->
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'reports:attendance_report' cell_group.id %}" class="btn btn-info w-100">
+                                    <i class="fas fa-chart-bar"></i> Attendance Report
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Gender Distribution -->
         <div class="row mb-4">
             <div class="col-lg-6">
@@ -343,6 +522,165 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% elif is_zone_leader %}
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ zone_cell_group_count }}</div>
+                    <div class="label">Cell Groups in {{ zone_name }}</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ zone_member_count }}</div>
+                    <div class="label">Members in Zone</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ zone_follow_up_required }}</div>
+                    <div class="label">Follow-up Required</div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stat-card">
+                    <div class="number">{{ zone_inactive_members }}</div>
+                    <div class="label">Inactive Members</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Quick Actions for Zone Leaders -->
+        <div class="row mb-4">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'members:cell_group_create' %}" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus"></i> Create Cell Group
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'members:cell_group_list' %}" class="btn btn-info w-100">
+                                    <i class="fas fa-list"></i> View All Groups
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'reports:zone_report' %}" class="btn btn-success w-100">
+                                    <i class="fas fa-file-alt"></i> Zone Report
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'members:member_create' %}" class="btn btn-warning w-100">
+                                    <i class="fas fa-user-plus"></i> Add Member
+                                </a>
+                            </div>
+                            <!-- ADD THIS BUTTON FOR PENDING APPROVALS -->
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'accounts:pending_approvals' %}" class="btn btn-danger w-100">
+                                    <i class="fas fa-user-check"></i> Pending Approvals
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Zone Attendance Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="number text-primary">{{ zone_attendance_summary.active_members }}</div>
+                                    <div class="label">Active Members</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="stat-card">
+                                    <div class="number text-warning">{{ zone_attendance_summary.follow_up_required }}</div>
+                                    <div class="label">Need Follow-up</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Cell Groups in Your Zone</h5>
+                        <a href="{% url 'reports:zone_report' %}" class="btn btn-sm btn-success">Zone Report</a>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Group</th>
+                                        <th>Members</th>
+                                        <th>Schedule</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for group in zone_cell_groups %}
+                                    <tr>
+                                        <td>{{ group.name }}</td>
+                                        <td>{{ group.member_count }}</td>
+                                        <td>{{ group.meeting_schedule }}</td>
+                                        <td>{% if group.approval_status == 'approved' %}Approved{% else %}Pending{% endif %}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">No cell groups in your zone yet</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Zone Member Status Overview</h5>
+                <a href="{% url 'reports:zone_report' %}" class="btn btn-sm btn-outline-primary">Generate Zone Report</a>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="stat-card bg-success">
+                            <div class="number">{{ zone_active_members }}</div>
+                            <div class="label">Active</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card bg-secondary">
+                            <div class="number">{{ zone_inactive_members }}</div>
+                            <div class="label">Inactive</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card bg-warning text-dark">
+                            <div class="number">{{ zone_follow_up_required }}</div>
+                            <div class="label">Follow-up</div>
                         </div>
                     </div>
                 </div>

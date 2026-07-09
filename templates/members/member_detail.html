@@ -22,6 +22,9 @@
                         </div>
                         <div class="col-md-6">
                             <p><strong>Cell Group:</strong> {{ member.cell_group.name|default:"Not Assigned" }}</p>
+                            <p><strong>Status:</strong> {{ member.get_member_status_display }}</p>
+                            <p><strong>Follow-up Required:</strong> {% if member.follow_up_required %}<span class="badge bg-warning text-dark">Yes</span>{% else %}<span class="badge bg-success">No</span>{% endif %}</p>
+                            <p><strong>Last Attendance:</strong> {{ member.last_attendance_date|default:"No record yet" }}</p>
                             <p><strong>Date Joined:</strong> {{ member.date_joined_church }}</p>
                             <p><strong>Occupation:</strong> {{ member.occupation|default:"Not specified" }}</p>
                             <p><strong>Baptized:</strong> {% if member.is_baptized %}Yes{% else %}No{% endif %}</p>
@@ -51,6 +54,24 @@
                         </div>
                     </div>
                     {% endif %}
+
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h5>Attendance History</h5>
+                            {% if attendance_history %}
+                            <ul class="list-group">
+                                {% for record in attendance_history %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>{{ record.meeting_date }} - {{ record.cell_group.name }} ({{ record.get_status_display }})</span>
+                                    {% if record.notes %}<small class="text-muted">{{ record.notes }}</small>{% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <p class="text-muted">No attendance recorded yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
                     
                     <div class="mt-3">
                         <a href="{% url 'members:member_edit' member.id %}" class="btn btn-warning">

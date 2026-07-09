@@ -74,4 +74,5 @@ urlpatterns = [
     path('pending-approvals/', views.pending_approvals_view, name='pending_approvals'),
     path('approve-user/<int:pk>/', views.approve_user_view, name='approve_user'),
     path('reject-user/<int:pk>/', views.reject_user_view, name='reject_user'),
+    path('zones/', views.zone_management_view, name='zone_management'),
 ]

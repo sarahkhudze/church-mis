@@ -3,10 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Q, Count
 from django.utils import timezone
-from datetime import date
+from datetime import date, datetime
 
-from .models import Member
+from .models import Member, AttendanceRecord
 from apps.cell_groups.models import CellGroup
+from apps.accounts.models import Zone
 from .forms import MemberForm, MemberSearchForm, CellGroupForm, BulkMemberActionForm
 from apps.accounts.utils import log_activity, can_manage_member, get_user_members
 
@@ -14,7 +15,8 @@ from apps.accounts.utils import log_activity, can_manage_member, get_user_member
 @login_required(login_url='login')
 def member_list_view(request):
     """Display list of members with filtering and searching."""
-    members = get_user_members(request.user)
+    show_inactive = request.user.is_admin() and request.GET.get('show_inactive') == 'on'
+    members = Member.objects.all() if show_inactive else get_user_members(request.user)
     
     form = MemberSearchForm(request.GET)
     
@@ -60,12 +62,19 @@ def member_list_view(request):
             birth_year_from = today.year - int(age_to)
             members = members.filter(date_of_birth__gte=date(birth_year_from, 1, 1))
     
+    if not show_inactive:
+        members = members.active()
+
+    member_status = request.GET.get('member_status', '')
+    if member_status:
+        members = members.filter(member_status=member_status)
+
     # Ordering
     ordering = request.GET.get('ordering', '-updated_at')
     members = members.order_by(ordering)
     
     # Logging
-    if search_query or gender or is_baptized or is_married or cell_group or age_from or age_to:
+    if search_query or gender or is_baptized or is_married or member_status or cell_group or age_from or age_to or show_inactive:
         log_activity(
             user=request.user,
             action='search',
@@ -89,8 +98,11 @@ def member_detail_view(request, pk):
     member = get_object_or_404(Member, pk=pk)
     
     # Check permissions
-    if not (request.user.is_admin() or 
-            (request.user.is_cell_leader() and member.cell_group == request.user.assigned_cell_group)):
+    if not (
+        request.user.is_admin() or
+        (request.user.is_zone_leader() and member.cell_group and member.cell_group.zone == request.user.zone) or
+        (request.user.is_cell_leader() and member.cell_group == request.user.assigned_cell_group)
+    ):
         messages.error(request, 'You do not have permission to view this member.')
         return redirect('members:member_list')
     
@@ -103,14 +115,19 @@ def member_detail_view(request, pk):
         request=request
     )
     
-    context = {'member': member}
+    attendance_history = AttendanceRecord.objects.filter(member=member).order_by('-meeting_date')[:10]
+
+    context = {
+        'member': member,
+        'attendance_history': attendance_history,
+    }
     return render(request, 'members/member_detail.html', context)
 
 
 @login_required(login_url='login')
 def member_create_view(request):
     """Create a new member."""
-    if not (request.user.is_admin() or request.user.is_cell_leader()):
+    if not (request.user.is_admin() or request.user.is_cell_leader() or request.user.is_zone_leader()):
         messages.error(request, 'You do not have permission to add members.')
         return redirect('members:member_list')
     
@@ -139,8 +156,13 @@ def member_create_view(request):
             return redirect('members:member_detail', pk=member.id)
     else:
         form = MemberForm()
-        # If cell leader, limit to their cell group
-        if request.user.is_cell_leader() and request.user.assigned_cell_group:
+        # Restrict the available cell groups by role and zone
+        if request.user.is_zone_leader() and request.user.zone:
+            form.fields['cell_group'].queryset = CellGroup.objects.filter(
+                zone=request.user.zone,
+                is_active=True
+            )
+        elif request.user.is_cell_leader() and request.user.assigned_cell_group:
             form.fields['cell_group'].queryset = CellGroup.objects.filter(
                 id=request.user.assigned_cell_group.id
             )
@@ -177,8 +199,13 @@ def member_edit_view(request, pk):
             return redirect('members:member_detail', pk=member.id)
     else:
         form = MemberForm(instance=member)
-        # If cell leader, limit to their cell group
-        if request.user.is_cell_leader() and request.user.assigned_cell_group:
+        # Restrict the available cell groups by role and zone
+        if request.user.is_zone_leader() and request.user.zone:
+            form.fields['cell_group'].queryset = CellGroup.objects.filter(
+                zone=request.user.zone,
+                is_active=True
+            )
+        elif request.user.is_cell_leader() and request.user.assigned_cell_group:
             form.fields['cell_group'].queryset = CellGroup.objects.filter(
                 id=request.user.assigned_cell_group.id
             )
@@ -199,7 +226,7 @@ def member_delete_view(request, pk):
     
     if request.method == 'POST':
         member_name = member.get_full_name()
-        member.is_active = False
+        member.member_status = Member.LEFT
         member.save()
         
         log_activity(
@@ -233,7 +260,7 @@ def bulk_member_action_view(request):
             action = form.cleaned_data['action']
             target_cell_group = form.cleaned_data.get('target_cell_group')
             
-            members = Member.objects.filter(id__in=members_ids, is_active=True)
+            members = Member.objects.filter(id__in=members_ids)
             
             if action == 'transfer_group' and target_cell_group:
                 members.update(cell_group=target_cell_group)
@@ -269,7 +296,7 @@ def bulk_member_action_view(request):
                 messages.success(request, f'{members.count()} members marked as married!')
             
             elif action == 'deactivate':
-                members.update(is_active=False)
+                members.update(member_status=Member.LEFT)
                 log_activity(
                     user=request.user,
                     action='edit',
@@ -280,7 +307,7 @@ def bulk_member_action_view(request):
                 messages.success(request, f'{members.count()} members deactivated!')
             
             elif action == 'activate':
-                members.update(is_active=True)
+                members.update(member_status=Member.ACTIVE)
                 log_activity(
                     user=request.user,
                     action='edit',
@@ -294,7 +321,7 @@ def bulk_member_action_view(request):
     else:
         form = BulkMemberActionForm()
     
-    members = Member.objects.filter(id__in=members_ids, is_active=True)
+    members = Member.objects.filter(id__in=members_ids)
     context = {
         'form': form,
         'members': members,
@@ -334,13 +361,17 @@ def bulk_member_action_view(request):
 @login_required(login_url='login')
 def cell_group_list_view(request):
     """Display list of cell groups."""
-    if not request.user.is_admin():
-        messages.error(request, 'Only administrators can view cell groups.')
+    if not (request.user.is_admin() or request.user.is_zone_leader()):
+        messages.error(request, 'Only administrators and zone leaders can view cell groups.')
         return redirect('members:member_list')
     
     # Use 'total_members' instead of 'member_count' to avoid conflicts
-    cell_groups = CellGroup.objects.filter(is_active=True).annotate(
-        total_members=Count('members', filter=Q(members__is_active=True))
+    base_queryset = CellGroup.objects.filter(is_active=True)
+    if request.user.is_zone_leader() and not request.user.is_admin():
+        base_queryset = base_queryset.filter(zone=request.user.zone, approval_status__in=['pending', 'approved'])
+
+    cell_groups = base_queryset.annotate(
+        total_members=Count('members', filter=Q(members__member_status=Member.ACTIVE))
     )
     
     search_query = request.GET.get('search', '')
@@ -356,36 +387,191 @@ def cell_group_list_view(request):
     }
     
     return render(request, 'members/cell_group_list.html', context)
+
 @login_required(login_url='login')
 def cell_group_detail_view(request, pk):
     """Display cell group details."""
-    if not request.user.is_admin():
-        messages.error(request, 'Only administrators can view cell group details.')
+    if not (request.user.is_admin() or request.user.is_zone_leader() or request.user.is_cell_leader()):
+        messages.error(request, 'Only administrators, zone leaders, and cell leaders can view cell group details.')
         return redirect('members:member_list')
     
     cell_group = get_object_or_404(CellGroup, pk=pk)
-    members = cell_group.members.filter(is_active=True)
+    if request.user.is_zone_leader() and not request.user.is_admin() and cell_group.zone != request.user.zone:
+        messages.error(request, 'You do not have permission to view this cell group.')
+        return redirect('members:cell_group_list')
+    if request.user.is_cell_leader() and not request.user.is_admin() and cell_group.id != request.user.assigned_cell_group_id:
+        messages.error(request, 'You do not have permission to view this cell group.')
+        return redirect('members:cell_group_list')
+
+    members = cell_group.members.active()
     
+    attendance_history = AttendanceRecord.objects.filter(cell_group=cell_group).order_by('-meeting_date')[:10]
+
     context = {
         'cell_group': cell_group,
         'members': members,
         'member_count': members.count(),
+        'attendance_history': attendance_history,
     }
     
     return render(request, 'members/cell_group_detail.html', context)
 
 
 @login_required(login_url='login')
+def record_attendance_view(request, cell_group_id):
+    """Record attendance for a cell-group meeting."""
+    cell_group = get_object_or_404(CellGroup, pk=cell_group_id)
+    can_manage = (
+        request.user.is_admin() or
+        (request.user.is_zone_leader() and request.user.zone and cell_group.zone == request.user.zone) or
+        (request.user.is_cell_leader() and request.user.assigned_cell_group_id == cell_group.id) or
+        (cell_group.leader_id == request.user.id)
+    )
+
+    if not can_manage:
+        messages.error(request, 'You do not have permission to record attendance for this cell group.')
+        return redirect('members:cell_group_detail', pk=cell_group.id)
+
+    members = cell_group.members.filter(member_status=Member.ACTIVE).order_by('last_name', 'first_name')
+
+    if request.method == 'POST':
+        meeting_date = request.POST.get('meeting_date')
+        if not meeting_date:
+            messages.error(request, 'Please select a meeting date.')
+            return redirect('members:record_attendance', cell_group_id=cell_group.id)
+
+        parsed_date = datetime.strptime(meeting_date, '%Y-%m-%d').date()
+        for member in members:
+            status = request.POST.get(f'status_{member.id}')
+            if status in ['present', 'absent']:
+                AttendanceRecord.objects.update_or_create(
+                    member=member,
+                    cell_group=cell_group,
+                    meeting_date=parsed_date,
+                    defaults={'status': status, 'notes': request.POST.get(f'notes_{member.id}', '')}
+                )
+
+        messages.success(request, f'Attendance recorded for {cell_group.name}.')
+        return redirect('members:cell_group_detail', pk=cell_group.id)
+
+    context = {
+        'cell_group': cell_group,
+        'members': members,
+        'default_date': timezone.now().date().isoformat(),
+    }
+    return render(request, 'members/attendance_record.html', context)
+
+
+# @login_required(login_url='login')
+# def cell_group_create_view(request):
+#     """Create a new cell group."""
+#     if not request.user.is_zone_leader():
+#         messages.error(request, 'Only zone leaders can create cell groups.')
+#         return redirect('members:member_list')
+    
+#     if request.method == 'POST':
+#         form = CellGroupForm(request.POST, user=request.user)  # Pass user to form
+#         if form.is_valid():
+#             cell_group = form.save(commit=False)
+#             if request.user.is_zone_leader() and request.user.zone:
+#                 # Auto-assign the zone from the user's zone (using the Zone model)
+#                 cell_group.zone = request.user.zone
+#             cell_group.approval_status = 'pending'
+#             cell_group.save()
+            
+#             log_activity(
+#                 user=request.user,
+#                 action='create',
+#                 entity_type='cell_group',
+#                 description=f'Created cell group: {cell_group.name}',
+#                 entity_id=cell_group.id,
+#                 request=request
+#             )
+            
+#             if cell_group.approval_status == 'pending':
+#                 messages.success(request, f'Cell group {cell_group.name} submitted for approval.')
+#             else:
+#                 messages.success(request, f'Cell group {cell_group.name} created successfully!')
+#             return redirect('members:cell_group_detail', pk=cell_group.id)
+#     else:
+#         form = CellGroupForm(user=request.user)  # Pass user to form
+    
+#     context = {'form': form}
+#     return render(request, 'members/cell_group_form.html', context)
+
+# @login_required(login_url='login')
+# def cell_group_create_view(request):
+#     """Create a new cell group."""
+#     print("=== DEBUG: cell_group_create_view ===")
+#     print(f"User: {request.user.username}")
+#     print(f"User role: {request.user.role}")
+#     print(f"User is_zone_leader: {request.user.is_zone_leader()}")
+#     print(f"User zone: {getattr(request.user, 'zone', 'NO ZONE FIELD')}")
+#     print(f"User zone_name: {getattr(request.user, 'zone_name', 'NO ZONE_NAME FIELD')}")
+#     print(f"Available user attributes: {[field.name for field in request.user._meta.fields]}")
+    
+#     if not request.user.is_zone_leader():
+#         print("User is NOT a zone leader - redirecting")
+#         messages.error(request, 'Only zone leaders can create cell groups.')
+#         return redirect('members:member_list')
+#     else:
+#         print("User IS a zone leader - proceeding")
+    
+#     if request.method == 'POST':
+#         print("POST request received")
+#         form = CellGroupForm(request.POST, user=request.user)  # Pass user to form
+#         print(f"Form created with user parameter: {form}")
+#         if form.is_valid():
+#             print("Form is valid")
+#             cell_group = form.save(commit=False)
+#             if request.user.is_zone_leader() and request.user.zone:
+#                 # Auto-assign the zone from the user's zone (using the Zone model)
+#                 cell_group.zone = request.user.zone
+#             cell_group.approval_status = 'pending'
+#             cell_group.save()
+            
+#             log_activity(
+#                 user=request.user,
+#                 action='create',
+#                 entity_type='cell_group',
+#                 description=f'Created cell group: {cell_group.name}',
+#                 entity_id=cell_group.id,
+#                 request=request
+#             )
+            
+#             if cell_group.approval_status == 'pending':
+#                 messages.success(request, f'Cell group {cell_group.name} submitted for approval.')
+#             else:
+#                 messages.success(request, f'Cell group {cell_group.name} created successfully!')
+#             return redirect('members:cell_group_detail', pk=cell_group.id)
+#     else:
+#         print("GET request - showing form")
+#         form = CellGroupForm(user=request.user)  # Pass user to form
+#         print(f"Form created with user parameter: {form}")
+    
+#     context = {'form': form}
+#     return render(request, 'members/cell_group_form.html', context)
+@login_required(login_url='login')
 def cell_group_create_view(request):
     """Create a new cell group."""
-    if not request.user.is_admin():
-        messages.error(request, 'Only administrators can create cell groups.')
+    if not request.user.is_zone_leader():
+        messages.error(request, 'Only zone leaders can create cell groups.')
         return redirect('members:member_list')
     
     if request.method == 'POST':
-        form = CellGroupForm(request.POST)
+        form = CellGroupForm(request.POST, user=request.user)  # Pass user to form
         if form.is_valid():
-            cell_group = form.save()
+            cell_group = form.save(commit=False)
+            if request.user.is_zone_leader() and request.user.zone_name:
+                # Auto-assign the zone from the user's zone_name field
+                from apps.zones.models import Zone as ZonesAppZone
+                try:
+                    zone = ZonesAppZone.objects.get(name=request.user.zone_name)
+                    cell_group.zone = zone
+                except ZonesAppZone.DoesNotExist:
+                    pass  # Or handle error appropriately
+            cell_group.approval_status = 'pending'
+            cell_group.save()
             
             log_activity(
                 user=request.user,
@@ -396,28 +582,89 @@ def cell_group_create_view(request):
                 request=request
             )
             
-            messages.success(request, f'Cell group {cell_group.name} created successfully!')
+            if cell_group.approval_status == 'pending':
+                messages.success(request, f'Cell group {cell_group.name} submitted for approval.')
+            else:
+                messages.success(request, f'Cell group {cell_group.name} created successfully!')
             return redirect('members:cell_group_detail', pk=cell_group.id)
     else:
-        form = CellGroupForm()
+        form = CellGroupForm(user=request.user)  # Pass user to form
     
     context = {'form': form}
     return render(request, 'members/cell_group_form.html', context)
+@login_required(login_url='login')
+def cell_group_approve_view(request, pk):
+    """Approve a pending cell-group creation request."""
+    if not (request.user.is_admin() or request.user.is_zone_leader()):
+        messages.error(request, 'You do not have permission to approve cell groups.')
+        return redirect('members:member_list')
+
+    cell_group = get_object_or_404(CellGroup, pk=pk)
+    if request.user.is_zone_leader() and not request.user.is_admin() and cell_group.zone != request.user.zone:
+        messages.error(request, 'You do not have permission to approve this cell group.')
+        return redirect('members:cell_group_list')
+    cell_group.approval_status = 'approved'
+    cell_group.save()
+
+    log_activity(
+        user=request.user,
+        action='approve',
+        entity_type='cell_group',
+        description=f'Approved cell group: {cell_group.name}',
+        entity_id=cell_group.id,
+        request=request
+    )
+    messages.success(request, f'Cell group {cell_group.name} approved successfully.')
+    return redirect('members:cell_group_list')
+
+
+@login_required(login_url='login')
+def cell_group_reject_view(request, pk):
+    """Reject a pending cell-group creation request."""
+    if not (request.user.is_admin() or request.user.is_zone_leader()):
+        messages.error(request, 'You do not have permission to reject cell groups.')
+        return redirect('members:member_list')
+
+    cell_group = get_object_or_404(CellGroup, pk=pk)
+    if request.user.is_zone_leader() and not request.user.is_admin() and cell_group.zone != request.user.zone:
+        messages.error(request, 'You do not have permission to reject this cell group.')
+        return redirect('members:cell_group_list')
+    cell_group.approval_status = 'rejected'
+    cell_group.save()
+
+    log_activity(
+        user=request.user,
+        action='reject',
+        entity_type='cell_group',
+        description=f'Rejected cell group: {cell_group.name}',
+        entity_id=cell_group.id,
+        request=request
+    )
+    messages.success(request, f'Cell group {cell_group.name} rejected.')
+    return redirect('members:cell_group_list')
 
 
 @login_required(login_url='login')
 def cell_group_edit_view(request, pk):
     """Edit cell group."""
-    if not request.user.is_admin():
-        messages.error(request, 'Only administrators can edit cell groups.')
+    if not (request.user.is_admin() or request.user.is_zone_leader()):
+        messages.error(request, 'Only administrators and zone leaders can edit cell groups.')
         return redirect('members:member_list')
     
     cell_group = get_object_or_404(CellGroup, pk=pk)
+    if request.user.is_zone_leader() and not request.user.is_admin() and cell_group.zone != request.user.zone:
+        messages.error(request, 'You do not have permission to edit this cell group.')
+        return redirect('members:cell_group_list')
     
     if request.method == 'POST':
-        form = CellGroupForm(request.POST, instance=cell_group)
+        form = CellGroupForm(request.POST, instance=cell_group, user=request.user)  # Pass user to form
         if form.is_valid():
-            cell_group = form.save()
+            cell_group = form.save(commit=False)
+            if cell_group.zone:
+                cell_group.zone_name = cell_group.zone.name
+            else:
+                cell_group.zone_name = ''
+            cell_group.save()
             
             log_activity(
                 user=request.user,
@@ -431,7 +678,7 @@ def cell_group_edit_view(request, pk):
             messages.success(request, 'Cell group updated successfully!')
             return redirect('members:cell_group_detail', pk=cell_group.id)
     else:
-        form = CellGroupForm(instance=cell_group)
+        form = CellGroupForm(instance=cell_group, user=request.user)  # Pass user to form
     
     context = {'form': form, 'cell_group': cell_group}
     return render(request, 'members/cell_group_form.html', context)

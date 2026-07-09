@@ -6,17 +6,22 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-church"></i> Cell Groups</h2>
+        {% if user.is_zone_leader %}
         <a href="{% url 'members:cell_group_create' %}" class="btn btn-primary">
             <i class="fas fa-plus"></i> Create New Cell Group
         </a>
+        {% endif %}
     </div>
     
     <div class="row">
         {% for group in cell_groups %}
         <div class="col-md-4 mb-4">
             <div class="card h-100">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">{{ group.name }}</h5>
+                    <span class="badge {% if group.approval_status == 'approved' %}bg-light text-success{% elif group.approval_status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                        {{ group.get_approval_status_display|default:group.approval_status|title }}
+                    </span>
                 </div>
                 <div class="card-body">
                     <p><strong>Location:</strong> {{ group.location }}</p>
@@ -35,6 +40,16 @@
                     <a href="{% url 'members:cell_group_edit' group.id %}" class="btn btn-warning btn-sm">
                         <i class="fas fa-edit"></i> Edit
                     </a>
+                    {% if user.is_admin or user.is_zone_leader %}
+                        {% if group.approval_status == 'pending' %}
+                        <a href="{% url 'members:cell_group_approve' group.id %}" class="btn btn-success btn-sm">
+                            <i class="fas fa-check"></i> Approve
+                        </a>
+                        <a href="{% url 'members:cell_group_reject' group.id %}" class="btn btn-danger btn-sm">
+                            <i class="fas fa-times"></i> Reject
+                        </a>
+                        {% endif %}
+                    {% endif %}
                 </div>
             </div>
         </div>

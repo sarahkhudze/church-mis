@@ -34,6 +34,7 @@ urlpatterns = [
     # Members & Cell Groups
     path('members/', include('apps.members.urls')),
     path('cell-groups/', include('apps.cell_groups.urls')),
+    path('zones/', include('apps.zones.urls')),
     
     # Reports
     path('reports/', include('apps.reports.urls')),

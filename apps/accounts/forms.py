@@ -1,8 +1,21 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm, AuthenticationForm
 from django.contrib.auth.password_validation import validate_password
-from .models import CustomUser
+from .models import CustomUser, Zone
 from apps.cell_groups.models import CellGroup
+
+
+class ZoneForm(forms.ModelForm):
+    """Form for creating church zones."""
+
+    class Meta:
+        model = Zone
+        fields = ('name', 'description', 'is_active')
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Zone Name'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Zone description'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -11,6 +24,7 @@ class CustomUserCreationForm(UserCreationForm):
     # Remove admin from the role choices that regular users can select
     USER_ROLE_CHOICES = [
         ('leader', 'Cell Group Leader'),
+        ('zone_leader', 'Zone Leader'),
         ('viewer', 'Viewer (Read-only)'),
     ]
     
@@ -83,6 +97,30 @@ class CustomUserCreationForm(UserCreationForm):
     # No additional validation needed
 
 
+class AdminUserCreationForm(UserCreationForm):
+    """Form for admins to create users with broader role access."""
+
+    zone_name = forms.ChoiceField(
+        choices=[('', 'Select a Zone')],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        help_text='Zone assigned to this user if relevant.'
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ('username', 'email', 'first_name', 'last_name', 'phone_number', 'role', 'zone_name', 'password1', 'password2')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        zone_choices = [('', 'Select a Zone')] + [
+            (zone.name, zone.name) for zone in Zone.objects.filter(is_active=True).order_by('name')
+        ]
+        self.fields['zone_name'].choices = zone_choices
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+
+
 class CustomUserChangeForm(UserChangeForm):
     """Form for updating user information."""
     
@@ -91,6 +129,12 @@ class CustomUserChangeForm(UserChangeForm):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control'}),
         help_text='Optional. Enter your phone number.'
+    )
+    zone_name = forms.ChoiceField(
+        choices=[('', 'Select a Zone')],
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        help_text='Zone assigned to this zone leader.'
     )
     assigned_cell_group = forms.ModelChoiceField(
         queryset=CellGroup.objects.filter(is_active=True),
@@ -113,10 +157,14 @@ class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = CustomUser
         fields = ('username', 'email', 'first_name', 'last_name', 'phone_number',
-                  'role', 'status', 'assigned_cell_group', 'rejection_reason', 'is_active_user')
+                  'role', 'status', 'zone_name', 'assigned_cell_group', 'rejection_reason', 'is_active_user')
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        zone_choices = [('', 'Select a Zone')] + [
+            (zone.name, zone.name) for zone in Zone.objects.filter(is_active=True).order_by('name')
+        ]
+        self.fields['zone_name'].choices = zone_choices
         
         for field in self.fields:
             if field != 'password':

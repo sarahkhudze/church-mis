@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if zone %}Edit{% else %}Create{% endif %} Zone - Church CMS{% endblock %}
+
+{% block content %}
+<div class="main-content">
+    <div class="container-fluid">
+        <div class="page-header">
+            <h1><i class="fas fa-layer-group"></i> {% if zone %}Edit{% else %}Create{% endif %} Zone</h1>
+            <p class="text-muted">{% if zone %}Update zone information{% else %}Add a new church zone{% endif %}</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Zone Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ zone.name|default:'' }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ zone.description|default:'' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="zone_leader" class="form-label">Zone Leader</label>
+                        <select class="form-select" id="zone_leader" name="zone_leader">
+                            <option value="">Select a zone leader...</option>
+                            {% for leader in zone_leaders %}
+                                <option value="{{ leader.id }}" {% if zone.zone_leader.id == leader.id %}selected{% endif %}>
+                                    {{ leader.get_full_name }} ({{ leader.get_role_display }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Only users without an active zone assignment are shown.</small>
+                    </div>
+                    
+                    {% if zone %}
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="is_active" name="is_active" 
+                                   {% if zone.is_active %}checked{% endif %}>
+                            <label class="form-check-label" for="is_active">Active</label>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'zones:zone_list' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if zone %}Update{% else %}Create{% endif %} Zone
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

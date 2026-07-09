@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.members',
     'apps.cell_groups',
+    'apps.zones',
     'apps.dashboard',
     'apps.reports',
     'apps.notifications',

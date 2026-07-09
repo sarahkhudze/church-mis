@@ -22,11 +22,14 @@
                     </div>
                     <div class="card-body">
                         <form method="get" class="row g-3">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <input type="text" name="search" class="form-control" placeholder="Search by name, email, phone" value="{{ search_query }}">
                             </div>
                             <div class="col-md-2">
                                 {{ form.gender }}
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.member_status }}
                             </div>
                             <div class="col-md-2">
                                 {{ form.is_baptized }}
@@ -34,12 +37,20 @@
                             <div class="col-md-2">
                                 {{ form.is_married }}
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 {% if user.is_admin %}
                                 {{ form.cell_group }}
                                 {% endif %}
                             </div>
                             <div class="col-md-12">
+                                {% if user.is_admin %}
+                                <div class="form-check form-switch mt-2">
+                                    {{ form.show_inactive }}
+                                    <label class="form-check-label" for="{{ form.show_inactive.id_for_label }}">
+                                        {{ form.show_inactive.label }}
+                                    </label>
+                                </div>
+                                {% endif %}
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-search"></i> Search
                                 </button>
@@ -66,6 +77,7 @@
                                 <th>Phone</th>
                                 <th>Email</th>
                                 <th>Cell Group</th>
+                                <th>Status</th>
                                 <th>Gender</th>
                                 <th>Baptism</th>
                                 <th>Marital Status</th>
@@ -78,6 +90,15 @@
                                 <td>{{ member.phone_number }}</td>
                                 <td>{{ member.email }}</td>
                                 <td>{{ member.cell_group|default:"—" }}</td>
+                                <td>
+                                    {% if member.member_status == 'active' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif member.member_status == 'left' %}
+                                        <span class="badge bg-warning text-dark">Left</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Deceased</span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if member.gender == 'M' %}
                                     <i class="fas fa-mars text-primary"></i> Male
@@ -112,7 +133,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="8" class="text-center text-muted py-4">
+                                <td colspan="9" class="text-center text-muted py-4">
                                     <i class="fas fa-inbox" style="font-size: 2rem;"></i>
                                     <p>No members found</p>
                                 </td>

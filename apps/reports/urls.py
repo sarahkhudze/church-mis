@@ -22,5 +22,8 @@ urlpatterns = [
     path('cell-group/', views.cell_group_report_view, name='cell_group_report'),
     path('baptism/', views.baptism_report_view, name='baptism_report'),
     path('marriage/', views.marriage_report_view, name='marriage_report'),
-    path('growth/', views.growth_report_view, name='growth_report'),  # Add this line
+    path('zone/', views.zone_report_view, name='zone_report'),
+    path('growth/', views.growth_report_view, name='growth_report'),
+    # ADD THIS LINE FOR ATTENDANCE REPORT
+    path('attendance/<int:cell_group_id>/', views.attendance_report_view, name='attendance_report'),
 ]

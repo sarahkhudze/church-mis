@@ -18,5 +18,8 @@ urlpatterns = [
     path('groups/', views.cell_group_list_view, name='cell_group_list'),
     path('groups/create/', views.cell_group_create_view, name='cell_group_create'),
     path('groups/<int:pk>/', views.cell_group_detail_view, name='cell_group_detail'),
+    path('groups/<int:cell_group_id>/attendance/', views.record_attendance_view, name='record_attendance'),
     path('groups/<int:pk>/edit/', views.cell_group_edit_view, name='cell_group_edit'),
+    path('groups/<int:pk>/approve/', views.cell_group_approve_view, name='cell_group_approve'),
+    path('groups/<int:pk>/reject/', views.cell_group_reject_view, name='cell_group_reject'),
 ]

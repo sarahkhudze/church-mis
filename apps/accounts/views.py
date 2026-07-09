@@ -10,9 +10,10 @@ from django.core.paginator import Paginator
 from django.utils import timezone
 
 from .models import CustomUser
+from apps.zones.models import Zone 
 from .forms import (
     CustomUserCreationForm, CustomUserChangeForm, CustomAuthenticationForm,
-    UserProfileForm, PasswordChangeForm
+    UserProfileForm, PasswordChangeForm, ZoneForm
 )
 from .utils import log_activity, admin_required, AdminRequiredMixin
 from apps.cell_groups.models import CellGroup
@@ -30,8 +31,8 @@ class RegisterView(CreateView):
         """Log the registration."""
         response = super().form_valid(form)
         
-        # Set status to pending for leaders, approved for others
-        if form.cleaned_data.get('role') == 'leader':
+        # Set status to pending for leader and zone leader applications, approved for others
+        if form.cleaned_data.get('role') in ['leader', 'zone_leader']:
             self.object.status = 'pending'
             self.object.save()
             messages.success(
@@ -118,6 +119,8 @@ class LoginView(View):
                     messages.success(request, f'Welcome back, Administrator {user.get_full_name()}!')
                 elif user.is_cell_leader() and user.is_approved():
                     messages.success(request, f'Welcome back, Cell Leader {user.get_full_name()}!')
+                elif user.is_zone_leader() and user.is_approved():
+                    messages.success(request, f'Welcome back, Zone Leader {user.get_full_name()}!')
                 else:
                     messages.success(request, f'Welcome back, {user.get_full_name()}!')
                 
@@ -291,15 +294,25 @@ class UserEditView(AdminRequiredMixin, UpdateView):
         )
         messages.success(self.request, 'User updated successfully!')
         return response
-
-
-@admin_required
 def pending_approvals_view(request):
-    """View pending user approvals (Admin only)."""
-    pending_users = CustomUser.objects.filter(
-        role='leader', 
-        status='pending'
-    ).order_by('-created_at')
+    """View pending user approvals for admins and zone leaders."""
+    if not (request.user.is_admin() or request.user.is_zone_leader()):
+        messages.error(request, 'You do not have permission to view pending approvals.')
+        return redirect('dashboard:dashboard')
+
+    # Determine what type of approvals the user can see based on their role
+    if request.user.is_admin():
+        # Admins can see both zone leaders and cell group leaders
+        pending_users = CustomUser.objects.filter(
+            role__in=['leader', 'zone_leader'],
+            status='pending'
+        ).order_by('-created_at')
+    elif request.user.is_zone_leader():
+        # Zone leaders can only see cell group leader requests
+        pending_users = CustomUser.objects.filter(
+            role='leader',  # Only cell group leaders
+            status='pending'
+        ).order_by('-created_at')
     
     # Search functionality
     search_query = request.GET.get('search', '')
@@ -319,20 +332,193 @@ def pending_approvals_view(request):
         'pending_users': page_obj,
         'search_query': search_query,
         'cell_groups': CellGroup.objects.filter(is_active=True),
+        'zones': Zone.objects.filter(is_active=True).order_by('name'),
     }
     
     return render(request, 'accounts/pending_approvals.html', context)
+# def pending_approvals_view(request):
+#     """View pending user approvals for admins and zone leaders."""
+#     if not (request.user.is_admin() or request.user.is_zone_leader()):
+#         messages.error(request, 'You do not have permission to view pending approvals.')
+#         return redirect('dashboard:dashboard')
+
+#     pending_users = CustomUser.objects.filter(
+#         role__in=['leader', 'zone_leader'],
+#         status='pending'
+#     ).order_by('-created_at')
+    
+#     # Search functionality
+#     search_query = request.GET.get('search', '')
+#     if search_query:
+#         pending_users = pending_users.filter(
+#             Q(username__icontains=search_query) |
+#             Q(first_name__icontains=search_query) |
+#             Q(last_name__icontains=search_query) |
+#             Q(email__icontains=search_query)
+#         )
+    
+#     paginator = Paginator(pending_users, 10)
+#     page_number = request.GET.get('page')
+#     page_obj = paginator.get_page(page_number)
+    
+#     # DEBUG: Print information to console
+#     zones = Zone.objects.filter(is_active=True)
+#     cell_groups = CellGroup.objects.filter(is_active=True)
+#     print(f"DEBUG: Found {zones.count()} active zones in pending_approvals_view")
+#     print(f"DEBUG: Found {cell_groups.count()} active cell groups in pending_approvals_view")
+#     for zone in zones:
+#         print(f"DEBUG: Zone - {zone.name} (ID: {zone.id})")
+    
+#     context = {
+#         'pending_users': page_obj,
+#         'search_query': search_query,
+#         'cell_groups': cell_groups,
+#         'zones': zones,
+#     }
+    
+#     return render(request, 'accounts/pending_approvals.html', context)
+
+# def pending_approvals_view(request):
+#     """View pending user approvals for admins and zone leaders."""
+#     if not (request.user.is_admin() or request.user.is_zone_leader()):
+#         messages.error(request, 'You do not have permission to view pending approvals.')
+#         return redirect('dashboard:dashboard')
+
+#     pending_users = CustomUser.objects.filter(
+#         role__in=['leader', 'zone_leader'],
+#         status='pending'
+#     ).order_by('-created_at')
+    
+#     # Search functionality
+#     search_query = request.GET.get('search', '')
+#     if search_query:
+#         pending_users = pending_users.filter(
+#             Q(username__icontains=search_query) |
+#             Q(first_name__icontains=search_query) |
+#             Q(last_name__icontains=search_query) |
+#             Q(email__icontains=search_query)
+#         )
+    
+#     paginator = Paginator(pending_users, 10)
+#     page_number = request.GET.get('page')
+#     page_obj = paginator.get_page(page_number)
+    
+#     context = {
+#         'pending_users': page_obj,
+#         'search_query': search_query,
+#         'cell_groups': CellGroup.objects.filter(is_active=True),
+#         'zones': Zone.objects.filter(is_active=True).order_by('name'),
+#     }
+    
+#     return render(request, 'accounts/pending_approvals.html', context)
 
 
-@admin_required
+# def approve_user_view(request, pk):
+#     """Approve a user application (Admin or Zone Leader)."""
+#     if not (request.user.is_admin() or request.user.is_zone_leader()):
+#         messages.error(request, 'You do not have permission to approve users.')
+#         return redirect('dashboard:dashboard')
+
+#     user = get_object_or_404(CustomUser, pk=pk)
+    
+#     if request.method == 'POST':
+#         assigned_cell_group_id = request.POST.get('assigned_cell_group')
+#         zone_id = request.POST.get('zone_id')
+
+#         if user.role == 'zone_leader':
+#             zone = Zone.objects.filter(id=zone_id).first() if zone_id else None
+#             if not zone:
+#                 messages.error(request, 'Please select a zone for this zone leader.')
+#                 return redirect('accounts:pending_approvals')
+
+#             user.zone_name = zone.name
+#             user.status = 'approved'
+#             user.approved_at = timezone.now()
+#             user.approved_by = request.user
+#             user.save()
+
+#             log_activity(
+#                 user=request.user,
+#                 action='approve',
+#                 entity_type='user',
+#                 description=f'Approved zone leader: {user.get_full_name()} for zone {user.zone_name or "unassigned"}',
+#                 entity_id=user.id,
+#                 request=request
+#             )
+
+#             messages.success(request, f'User {user.get_full_name()} has been approved as a zone leader.')
+#         elif assigned_cell_group_id:
+#             try:
+#                 cell_group = CellGroup.objects.get(id=assigned_cell_group_id)
+#                 user.assigned_cell_group = cell_group
+#                 user.status = 'approved'
+#                 user.approved_at = timezone.now()
+#                 user.approved_by = request.user
+#                 user.save()
+                
+#                 log_activity(
+#                     user=request.user,
+#                     action='approve',
+#                     entity_type='user',
+#                     description=f'Approved user: {user.get_full_name()} and assigned to cell group {cell_group.name}',
+#                     entity_id=user.id,
+#                     request=request
+#                 )
+                
+#                 messages.success(
+#                     request, 
+#                     f'User {user.get_full_name()} has been approved and assigned to {cell_group.name}.'
+#                 )
+#             except CellGroup.DoesNotExist:
+#                 messages.error(request, 'Selected cell group does not exist.')
+#         else:
+#             messages.error(request, 'Please select a cell group for this leader.')
+        
+#         return redirect('accounts:pending_approvals')
+    
+#     context = {
+#         'user': user,
+#         'cell_groups': CellGroup.objects.filter(is_active=True),
+#         'zones': Zone.objects.filter(is_active=True).order_by('name'),
+#     }
+#     return render(request, 'accounts/approve_user.html', context)
+
+
 def approve_user_view(request, pk):
-    """Approve a user application (Admin only)."""
+    """Approve a user application (Admin or Zone Leader)."""
+    if not (request.user.is_admin() or request.user.is_zone_leader()):
+        messages.error(request, 'You do not have permission to approve users.')
+        return redirect('dashboard:dashboard')
+
     user = get_object_or_404(CustomUser, pk=pk)
     
     if request.method == 'POST':
         assigned_cell_group_id = request.POST.get('assigned_cell_group')
-        
-        if assigned_cell_group_id:
+        zone_id = request.POST.get('zone_id')
+
+        if user.role == 'zone_leader':
+            zone = Zone.objects.filter(id=zone_id).first() if zone_id else None
+            if not zone:
+                messages.error(request, 'Please select a zone for this zone leader.')
+                return redirect('accounts:pending_approvals')
+
+            user.zone_name = zone.name
+            user.status = 'approved'
+            user.approved_at = timezone.now()
+            user.approved_by = request.user
+            user.save()
+
+            log_activity(
+                user=request.user,
+                action='approve',
+                entity_type='user',
+                description=f'Approved zone leader: {user.get_full_name()} for zone {user.zone_name or "unassigned"}',
+                entity_id=user.id,
+                request=request
+            )
+
+            messages.success(request, f'User {user.get_full_name()} has been approved as a zone leader.')
+        elif assigned_cell_group_id:
             try:
                 cell_group = CellGroup.objects.get(id=assigned_cell_group_id)
                 user.assigned_cell_group = cell_group
@@ -361,16 +547,20 @@ def approve_user_view(request, pk):
         
         return redirect('accounts:pending_approvals')
     
+    # This is the GET request - make sure to pass zones and cell_groups
     context = {
         'user': user,
         'cell_groups': CellGroup.objects.filter(is_active=True),
+        'zones': Zone.objects.filter(is_active=True).order_by('name'),
     }
     return render(request, 'accounts/approve_user.html', context)
 
-
-@admin_required
 def reject_user_view(request, pk):
-    """Reject a user application (Admin only)."""
+    """Reject a user application (Admin or Zone Leader)."""
+    if not (request.user.is_admin() or request.user.is_zone_leader()):
+        messages.error(request, 'You do not have permission to reject users.')
+        return redirect('dashboard:dashboard')
+
     user = get_object_or_404(CustomUser, pk=pk)
     
     if request.method == 'POST':
@@ -452,11 +642,13 @@ def admin_create_user_view(request):
     if request.method == 'POST':
         form = AdminUserCreationForm(request.POST)
         if form.is_valid():
-            user = form.save()
+            user = form.save(commit=False)
+            user.zone_name = form.cleaned_data.get('zone_name') or user.zone_name
+            user.save()
             
             # Set status based on role
-            if user.role == 'leader':
-                user.status = 'approved'  # Admin-created leaders are auto-approved
+            if user.role in ['leader', 'zone_leader']:
+                user.status = 'approved'  # Admin-created leaders and zone leaders are auto-approved
                 user.save()
             
             log_activity(
@@ -475,3 +667,24 @@ def admin_create_user_view(request):
     
     context = {'form': form}
     return render(request, 'accounts/admin_create_user.html', context)
+
+
+@admin_required
+def zone_management_view(request):
+    """Create and manage church zones."""
+    zones = Zone.objects.all().order_by('name')
+
+    if request.method == 'POST':
+        form = ZoneForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Zone created successfully.')
+            return redirect('accounts:zone_management')
+    else:
+        form = ZoneForm()
+
+    context = {
+        'form': form,
+        'zones': zones,
+    }
+    return render(request, 'accounts/zone_management.html', context)

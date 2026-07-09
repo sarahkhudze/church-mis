@@ -31,15 +31,16 @@ class CellGroupAdmin(admin.ModelAdmin):
     
     def member_count(self, obj):
         """Display member count for the cell group."""
-        return obj.member_count
+        # Count related members
+        return obj.members.count()
     member_count.short_description = 'Member Count'
 
 
 class MemberAdmin(admin.ModelAdmin):
     """Admin interface for Member model."""
     
-    list_display = ('get_full_name', 'gender', 'cell_group', 'is_baptized', 'is_married', 'is_active', 'created_at')
-    list_filter = ('gender', 'is_baptized', 'is_married', 'is_active', 'cell_group', 'created_at')
+    list_display = ('get_full_name', 'gender', 'cell_group', 'member_status', 'is_baptized', 'is_married', 'is_active', 'created_at')
+    list_filter = ('gender', 'is_baptized', 'is_married', 'member_status', 'is_active', 'cell_group', 'created_at')
     search_fields = ('first_name', 'last_name', 'email', 'phone_number')
     readonly_fields = ('created_at', 'updated_at', 'created_by')
     ordering = ('last_name', 'first_name')
@@ -52,7 +53,7 @@ class MemberAdmin(admin.ModelAdmin):
             'fields': ('phone_number', 'email', 'residential_address')
         }),
         ('Church Information', {
-            'fields': ('cell_group', 'date_joined_church')
+            'fields': ('cell_group', 'member_status', 'date_joined_church')
         }),
         ('Baptism Information', {
             'fields': ('is_baptized', 'baptism_certificate_number', 'baptism_date')

@@ -95,7 +95,7 @@
                         </div>
                         
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group mb-3">
                                     {{ form.occupation.label_tag }}
                                     {{ form.occupation }}
@@ -104,12 +104,21 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="form-group mb-3">
                                     {{ form.cell_group.label_tag }}
                                     {{ form.cell_group }}
                                     {% if form.cell_group.errors %}
                                         <div class="text-danger">{{ form.cell_group.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    {{ form.member_status.label_tag }}
+                                    {{ form.member_status }}
+                                    {% if form.member_status.errors %}
+                                        <div class="text-danger">{{ form.member_status.errors }}</div>
                                     {% endif %}
                                 </div>
                             </div>
