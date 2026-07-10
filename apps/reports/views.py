@@ -1110,7 +1110,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, FileResponse
 from django.contrib import messages
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from django.utils import timezone
+from django.db.models import Count, Q, Min, Max
 import csv
 import io
 from collections import defaultdict
@@ -2200,6 +2202,8 @@ def zone_report_view(request):
     return render(request, 'reports/zone_report.html', context)
 
 
+
+# apps/reports/views.py
 @login_required(login_url='login')
 def growth_report_view(request):
     """Generate growth report."""
@@ -2207,38 +2211,54 @@ def growth_report_view(request):
         messages.error(request, 'Only administrators and zone leaders can access growth reports.')
         return redirect('reports:reports')
     
-    # Get last 12 months of data
-    from datetime import datetime, timedelta
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=365)
-    
-    monthly_growth = []
-    current_date = start_date
-    
-    from apps.members.models import Member
+    # Get selected year from GET parameter (default to current year)
+    selected_year_str = request.GET.get('year', str(timezone.now().year))
+    try:
+        selected_year = int(selected_year_str)
+        if selected_year < 2000 or selected_year > timezone.now().year + 1:
+            # Basic validation, adjust range as needed
+            selected_year = timezone.now().year
+            messages.warning(request, f'Invalid year selected. Showing data for {selected_year}.')
+    except (ValueError, TypeError):
+        selected_year = timezone.now().year
+        messages.warning(request, f'Invalid year format. Showing data for {selected_year}.')
+
+    # Define the members queryset based on user permissions
     members = Member.objects.active()
     if request.user.is_zone_leader() and request.user.zone_name:
         members = members.filter(cell_group__zone_name=request.user.zone_name)
+
+    # Calculate start and end dates for the selected year
+    start_date = timezone.make_aware(datetime(selected_year, 1, 1))
+    end_date = timezone.make_aware(datetime(selected_year, 12, 31, 23, 59, 59))
     
-    while current_date <= end_date:
-        month_start = current_date.replace(day=1)
-        if current_date.month == 12:
-            next_month = current_date.replace(year=current_date.year + 1, month=1, day=1)
+    monthly_growth = []
+    # Loop through all 12 months of the selected year
+    for month_num in range(1, 13):
+        month_start = timezone.make_aware(datetime(selected_year, month_num, 1))
+        if month_num == 12:
+            next_month = timezone.make_aware(datetime(selected_year + 1, 1, 1))
         else:
-            next_month = current_date.replace(month=current_date.month + 1, day=1)
+            next_month = timezone.make_aware(datetime(selected_year, month_num + 1, 1))
         
+        # Get members who joined in this specific month
         new_members = members.filter(
-            date_joined_church__gte=month_start,
-            date_joined_church__lt=next_month
+            date_joined_church__gte=month_start.date(),
+            date_joined_church__lt=next_month.date()
         ).count()
         
+        # Format month name for display (e.g., "January 2026")
+        month_name = month_start.strftime('%B %Y')
+        
         monthly_growth.append({
-            'month': month_start.strftime('%B %Y'),
+            'month': month_name,
             'new_members': new_members,
         })
-        
-        current_date = next_month
-    
+
+    # Calculate total for the selected year
+    total_new_members = sum(item['new_members'] for item in monthly_growth)
+
+    # Handle export formats
     format_type = request.GET.get('format', 'html')
     
     if format_type == 'excel':
@@ -2249,11 +2269,14 @@ def growth_report_view(request):
         
         workbook = openpyxl.Workbook()
         worksheet = workbook.active
-        worksheet.title = 'Growth Report'
+        worksheet.title = f'Growth Report {selected_year}'
         
         worksheet.append(['Month', 'New Members'])
         for data in monthly_growth:
             worksheet.append([data['month'], data['new_members']])
+        
+        # Add total row
+        worksheet.append(['TOTAL', total_new_members])
         
         buffer = io.BytesIO()
         workbook.save(buffer)
@@ -2262,7 +2285,7 @@ def growth_report_view(request):
         return FileResponse(
             buffer,
             as_attachment=True,
-            filename='growth_report.xlsx',
+            filename=f'growth_report_{selected_year}.xlsx',
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
     
@@ -2271,18 +2294,43 @@ def growth_report_view(request):
         from django.http import HttpResponse
         
         response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="growth_report.csv"'
+        response['Content-Disposition'] = f'attachment; filename="growth_report_{selected_year}.csv"'
         
         writer = csv.writer(response)
         writer.writerow(['Month', 'New Members'])
         for data in monthly_growth:
             writer.writerow([data['month'], data['new_members']])
+        writer.writerow(['TOTAL', total_new_members])
         
         return response
     
+    # Prepare context for the template
+    # Get all years where members joined (for the dropdown)
+    all_years_qs = Member.objects.active().aggregate(
+        min_year=Min('date_joined_church__year'),
+        max_year=Max('date_joined_church__year')
+    )
+    min_year = all_years_qs['min_year']
+    max_year = all_years_qs['max_year']
+    
+    available_years = []
+    if min_year and max_year:
+        # Include all years between min and max where members exist
+        available_years = list(range(min_year, max_year + 1))
+        # Also include the current year in case there are no members yet
+        current_year = timezone.now().year
+        if current_year not in available_years:
+            available_years.append(current_year)
+        available_years.sort(reverse=True)  # Most recent first
+    else:
+        # Fallback: just show current year
+        available_years = [timezone.now().year]
+
     context = {
         'monthly_growth': monthly_growth,
-        'total_new_members': sum(item['new_members'] for item in monthly_growth),
+        'total_new_members': total_new_members,
+        'selected_year': selected_year,
+        'available_years': available_years,
     }
     
     return render(request, 'reports/growth_report.html', context)
