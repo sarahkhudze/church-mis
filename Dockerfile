@@ -9,8 +9,13 @@ RUN pip install --default-timeout=1000 --retries 5 --no-cache-dir -r requirement
 
 COPY . .
 
-# Run migrations on first start (only once!)
+# Run migrations
 RUN python manage.py migrate --noinput
+
+# Create superuser if environment variables are provided
+RUN if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ] && [ -n "$DJANGO_SUPERUSER_EMAIL" ]; then \
+    python manage.py createsuperuser --no-input; \
+    fi
 
 # Expose port
 EXPOSE 8000
