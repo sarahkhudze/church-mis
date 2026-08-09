@@ -8,7 +8,8 @@ RUN pip install --default-timeout=1000 --retries 5 --no-cache-dir -r requirement
 COPY . .
 
 # Make the start script executable
-RUN chmod +x /app/start.sh
+RUN chmod +x /app/entrypoint.sh
+
 
 EXPOSE 8000
 
