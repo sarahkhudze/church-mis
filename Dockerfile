@@ -9,6 +9,9 @@ RUN pip install --default-timeout=1000 --retries 5 --no-cache-dir -r requirement
 
 COPY . .
 
+# Run migrations on first start (only once!)
+RUN python manage.py migrate --noinput
+
 # Expose port
 EXPOSE 8000
 
