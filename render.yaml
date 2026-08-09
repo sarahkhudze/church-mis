@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: church-cms
+    runtime: python           
+    region: frankfurt
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+    #startCommand: gunicorn your_project_name.wsgi:application
+    startCommand: gunicorn church_cms.wsgi:application
+    envVars:
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromService:
+          name: church-cms-db
+          type: pserv
+          property: connectionString
+
+databases:
+  - name: church-cms-db
+    region: frankfurt
+    plan: free
