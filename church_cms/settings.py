@@ -97,7 +97,12 @@ WSGI_APPLICATION = 'church_cms.wsgi.application'
 DATABASE_URL = os.environ.get('DATABASE_URL')  # 👈 Check for environment variable
 if DATABASE_URL:
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=True)  # 👈 Use PostgreSQL
+        'default': dj_database_url.parse(
+            DATABASE_URL, 
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=False  # Set to True if your Supabase requires SSL
+        )
     }
 else:
     DATABASES = {
