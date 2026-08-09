@@ -7,10 +7,10 @@ RUN pip install --default-timeout=1000 --retries 5 --no-cache-dir -r requirement
 
 COPY . .
 
-# Make the start script executable
+# Make the entrypoint script executable
 RUN chmod +x /app/entrypoint.sh
-
 
 EXPOSE 8000
 
-CMD ["/app/start.sh"]
+# Use entrypoint.sh
+CMD ["/app/entrypoint.sh"]
