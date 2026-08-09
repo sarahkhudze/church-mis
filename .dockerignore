@@ -1,0 +1,7 @@
+ml-malawi/
+venv/
+__pycache__/
+*.pyc
+.git/
+.env
+db.sqlite3
