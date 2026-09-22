@@ -10,6 +10,9 @@ urlpatterns = [
     path('<int:pk>/', views.member_detail_view, name='member_detail'),
     path('<int:pk>/edit/', views.member_edit_view, name='member_edit'),
     path('<int:pk>/delete/', views.member_delete_view, name='member_delete'),
+    # Add this to your urlpatterns list
+    #path('member/<int:pk>/transfer/', views.member_transfer_view, name='member_transfer'),
+    path('<int:pk>/transfer/', views.member_transfer_view, name='member_transfer'),
     
     # Bulk Actions
     path('bulk-action/', views.bulk_member_action_view, name='bulk_action'),

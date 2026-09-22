@@ -135,12 +135,28 @@ class Member(models.Model):
         ]
         unique_together = [('phone_number', 'email')]
     
+    # def save(self, *args, **kwargs):
+    #     """Override save to keep status and marital flags consistent."""
+    #     if self.is_married:
+    #         self.marital_status = 'married'
+    #     else:
+    #         self.marital_status = 'single'
+
+    #     if not self.member_status:
+    #         self.member_status = self.ACTIVE if self.is_active else self.LEFT
+
+    #     self.is_active = self.member_status == self.ACTIVE
+    #     self.follow_up_required = self.update_follow_up_status()
+    #     super().save(*args, **kwargs)
+
     def save(self, *args, **kwargs):
         """Override save to keep status and marital flags consistent."""
         if self.is_married:
             self.marital_status = 'married'
         else:
-            self.marital_status = 'single'
+            # Only default to 'single' if it's NOT already widowed or divorced
+            if self.marital_status not in ['widowed', 'divorced']:
+                self.marital_status = 'single'
 
         if not self.member_status:
             self.member_status = self.ACTIVE if self.is_active else self.LEFT

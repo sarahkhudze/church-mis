@@ -165,15 +165,26 @@
                         
                         <hr>
                         <h5>Marriage Information</h5>
+
+                        <!-- ✅ NEW: Marital Status Dropdown -->
+                        <div class="form-group mb-3">
+                            {{ form.marital_status.label_tag }}
+                            {{ form.marital_status }}
+                            {% if form.marital_status.errors %}
+                                <div class="text-danger">{{ form.marital_status.errors }}</div>
+                            {% endif %}
+                        </div>
                         
-                        <div class="form-check mb-3">
+                        <!-- We hide the is_married checkbox since the dropdown handles it, 
+                             but we keep it in the DOM so the form can submit it properly -->
+                        <div class="form-check mb-3" style="display: none;">
                             {{ form.is_married }}
                             <label class="form-check-label" for="{{ form.is_married.id_for_label }}">
                                 {{ form.is_married.label }}
                             </label>
                         </div>
                         
-                        <div id="marriage-fields" style="display: {% if form.is_married.value %}block{% else %}none{% endif %};">
+                        <div id="marriage-fields" style="display: {% if form.marital_status.value == 'married' %}block{% else %}none{% endif %};">
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group mb-3">
@@ -225,14 +236,26 @@
         }
     });
     
-    // Toggle marriage fields
-    document.getElementById('{{ form.is_married.id_for_label }}').addEventListener('change', function() {
-        var marriageFields = document.getElementById('marriage-fields');
-        if (this.checked) {
+    // ✅ UPDATED: Toggle marriage fields based on the Marital Status dropdown
+    var maritalStatusDropdown = document.getElementById('{{ form.marital_status.id_for_label }}');
+    var marriageFields = document.getElementById('marriage-fields');
+    var isMarriedCheckbox = document.getElementById('{{ form.is_married.id_for_label }}');
+
+    function toggleMarriageFields() {
+        if (maritalStatusDropdown.value === 'married') {
             marriageFields.style.display = 'block';
+            isMarriedCheckbox.checked = true; // Auto-check the hidden checkbox
         } else {
             marriageFields.style.display = 'none';
+            isMarriedCheckbox.checked = false; // Auto-uncheck the hidden checkbox
         }
-    });
+    }
+
+    // Listen for changes on the dropdown
+    if (maritalStatusDropdown) {
+        maritalStatusDropdown.addEventListener('change', toggleMarriageFields);
+        // Run once on page load to set the correct initial state
+        toggleMarriageFields(); 
+    }
 </script>
 {% endblock %}

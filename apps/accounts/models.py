@@ -34,8 +34,8 @@ class CustomUser(AbstractUser):
     
     ROLE_CHOICES = [
         ('admin', 'Church Administrator'),
-        ('leader', 'Cell Group Leader'),
-        ('zone_leader', 'Zone Leader'),
+        ('leader', 'Limana Deacon'),
+        ('zone_leader', 'Zone Deacon'),
         ('viewer', 'Viewer (Read-only)'),
     ]
     
@@ -68,7 +68,7 @@ class CustomUser(AbstractUser):
         max_length=100,
         blank=True,
         null=True,
-        help_text='Zone assigned to this zone leader'
+        help_text='Zone assigned to this zone deacon'
     )
     # Use string reference to avoid circular import
     assigned_cell_group = models.ForeignKey(
@@ -77,7 +77,7 @@ class CustomUser(AbstractUser):
         null=True,
         blank=True,
         related_name='leaders',
-        help_text='Cell group assigned to this leader'
+        help_text='Limana assigned to this deacon'
     )
     is_active_user = models.BooleanField(
         default=True,
@@ -88,7 +88,7 @@ class CustomUser(AbstractUser):
     application_reason = models.TextField(
         blank=True,
         null=True,
-        help_text='Reason for applying as a cell group leader'
+        help_text='Reason for applying as a Limana Deacon'
     )
     approved_at = models.DateTimeField(
         null=True,

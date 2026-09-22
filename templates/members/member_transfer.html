@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Transfer Member{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-exchange-alt"></i> Transfer Member</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">You are about to transfer <strong>{{ member.get_full_name }}</strong>.</p>
+                    <p class="mb-4"><strong>Current Cell Group:</strong> 
+                        <span class="badge bg-secondary">{{ old_cell_group.name|default:"No Group Assigned" }}</span>
+                    </p>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            {{ form.target_cell_group.label_tag }}
+                            {{ form.target_cell_group }}
+                            {% if form.target_cell_group.errors %}
+                                <div class="text-danger small mt-1">{{ form.target_cell_group.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.transfer_reason.label_tag }}
+                            {{ form.transfer_reason }}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'members:member_detail' member.id %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-check"></i> Confirm Transfer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

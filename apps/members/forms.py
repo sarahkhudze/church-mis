@@ -5,6 +5,104 @@ from apps.cell_groups.models import CellGroup
 from apps.accounts.models import Zone
 
 
+# class MemberForm(forms.ModelForm):
+#     """Form for creating and updating member information."""
+    
+#     class Meta:
+#         model = Member
+#         fields = [
+#             'first_name', 'last_name', 'date_of_birth', 'gender',
+#             'phone_number', 'email', 'residential_address', 'occupation',
+#             'cell_group', 'member_status', 'date_joined_church', 'is_baptized', 
+#             'baptism_certificate_number', 'baptism_date', 'is_married',
+#             'marriage_certificate_number', 'marriage_date', 'spouse_name', 'notes'
+#         ]
+#         widgets = {
+#             'first_name': forms.TextInput(attrs={
+#                 'class': 'form-control',
+#                 'placeholder': 'First Name'
+#             }),
+#             'last_name': forms.TextInput(attrs={
+#                 'class': 'form-control',
+#                 'placeholder': 'Last Name'
+#             }),
+#             'date_of_birth': forms.DateInput(attrs={
+#                 'class': 'form-control',
+#                 'type': 'date'
+#             }),
+#             'gender': forms.Select(attrs={'class': 'form-control'}),
+#             'phone_number': forms.TextInput(attrs={
+#                 'class': 'form-control',
+#                 'placeholder': 'Phone Number',
+#                 'type': 'tel'
+#             }),
+#             'email': forms.EmailInput(attrs={
+#                 'class': 'form-control',
+#                 'placeholder': 'Email Address'
+#             }),
+#             'residential_address': forms.Textarea(attrs={
+#                 'class': 'form-control',
+#                 'rows': 3,
+#                 'placeholder': 'Residential Address'
+#             }),
+#             'occupation': forms.TextInput(attrs={
+#                 'class': 'form-control',
+#                 'placeholder': 'Occupation (Optional)'
+#             }),
+#             'cell_group': forms.Select(attrs={'class': 'form-control'}),
+#             'member_status': forms.Select(attrs={'class': 'form-control'}),
+#             'date_joined_church': forms.DateInput(attrs={
+#                 'class': 'form-control',
+#                 'type': 'date'
+#             }),
+#             'is_baptized': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+#             'baptism_certificate_number': forms.TextInput(attrs={
+#                 'class': 'form-control',
+#                 'placeholder': 'Baptism Certificate Number'
+#             }),
+#             'baptism_date': forms.DateInput(attrs={
+#                 'class': 'form-control',
+#                 'type': 'date'
+#             }),
+#             'is_married': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+#             'marriage_certificate_number': forms.TextInput(attrs={
+#                 'class': 'form-control',
+#                 'placeholder': 'Marriage Certificate Number'
+#             }),
+#             'marriage_date': forms.DateInput(attrs={
+#                 'class': 'form-control',
+#                 'type': 'date'
+#             }),
+#             'spouse_name': forms.TextInput(attrs={
+#                 'class': 'form-control',
+#                 'placeholder': 'Spouse Name'
+#             }),
+#             'notes': forms.Textarea(attrs={
+#                 'class': 'form-control',
+#                 'rows': 3,
+#                 'placeholder': 'Additional Notes'
+#             }),
+#         }
+    
+#     def clean(self):
+#         """Validate member data with conditional checks."""
+#         cleaned_data = super().clean()
+        
+#         is_baptized = cleaned_data.get('is_baptized')
+#         baptism_cert = cleaned_data.get('baptism_certificate_number')
+        
+#         if is_baptized and not baptism_cert:
+#             self.add_error('baptism_certificate_number',
+#                           'Baptism Certificate Number is required for baptized members.')
+        
+#         is_married = cleaned_data.get('is_married')
+#         marriage_cert = cleaned_data.get('marriage_certificate_number')
+        
+#         if is_married and not marriage_cert:
+#             self.add_error('marriage_certificate_number',
+#                           'Marriage Certificate Number is required for married members.')
+        
+#         return cleaned_data
 class MemberForm(forms.ModelForm):
     """Form for creating and updating member information."""
     
@@ -14,96 +112,62 @@ class MemberForm(forms.ModelForm):
             'first_name', 'last_name', 'date_of_birth', 'gender',
             'phone_number', 'email', 'residential_address', 'occupation',
             'cell_group', 'member_status', 'date_joined_church', 'is_baptized', 
-            'baptism_certificate_number', 'baptism_date', 'is_married',
-            'marriage_certificate_number', 'marriage_date', 'spouse_name', 'notes'
+            'baptism_certificate_number', 'baptism_date', 
+            'marital_status',  # <-- ADDED: This gives the dropdown
+            'is_married', 'marriage_certificate_number', 'marriage_date', 'spouse_name', 'notes'
         ]
         widgets = {
-            'first_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'First Name'
-            }),
-            'last_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Last Name'
-            }),
-            'date_of_birth': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
+            'first_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'First Name'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Last Name'}),
+            'date_of_birth': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'gender': forms.Select(attrs={'class': 'form-control'}),
-            'phone_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Phone Number',
-                'type': 'tel'
-            }),
-            'email': forms.EmailInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Email Address'
-            }),
-            'residential_address': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Residential Address'
-            }),
-            'occupation': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Occupation (Optional)'
-            }),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Phone Number', 'type': 'tel'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Email Address'}),
+            'residential_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Residential Address'}),
+            'occupation': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Occupation (Optional)'}),
             'cell_group': forms.Select(attrs={'class': 'form-control'}),
             'member_status': forms.Select(attrs={'class': 'form-control'}),
-            'date_joined_church': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
+            'date_joined_church': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'is_baptized': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'baptism_certificate_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Baptism Certificate Number'
-            }),
-            'baptism_date': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
+            'baptism_certificate_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Baptism Certificate Number'}),
+            'baptism_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            
+            # <-- ADDED: Widget for the new dropdown
+            'marital_status': forms.Select(attrs={'class': 'form-control'}), 
+            
             'is_married': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'marriage_certificate_number': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Marriage Certificate Number'
-            }),
-            'marriage_date': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
-            }),
-            'spouse_name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Spouse Name'
-            }),
-            'notes': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Additional Notes'
-            }),
+            'marriage_certificate_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Marriage Certificate Number'}),
+            'marriage_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'spouse_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Spouse Name'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Additional Notes'}),
         }
     
     def clean(self):
         """Validate member data with conditional checks."""
         cleaned_data = super().clean()
         
+        # Baptism validation
         is_baptized = cleaned_data.get('is_baptized')
         baptism_cert = cleaned_data.get('baptism_certificate_number')
-        
         if is_baptized and not baptism_cert:
             self.add_error('baptism_certificate_number',
                           'Baptism Certificate Number is required for baptized members.')
         
-        is_married = cleaned_data.get('is_married')
+        # Marriage validation
+        marital_status = cleaned_data.get('marital_status')
         marriage_cert = cleaned_data.get('marriage_certificate_number')
         
-        if is_married and not marriage_cert:
-            self.add_error('marriage_certificate_number',
-                          'Marriage Certificate Number is required for married members.')
+        # Automatically sync the 'is_married' checkbox based on the dropdown selection
+        if marital_status == 'married':
+            cleaned_data['is_married'] = True # Force checkbox to True
+            if not marriage_cert:
+                self.add_error('marriage_certificate_number',
+                              'Marriage Certificate Number is required for married members.')
+        else:
+            # If Single, Divorced, or Widowed, ensure the checkbox is False
+            cleaned_data['is_married'] = False 
         
         return cleaned_data
-
 
 class MemberSearchForm(forms.Form):
     """Form for searching and filtering members."""
@@ -315,7 +379,45 @@ class MemberImportForm(forms.Form):
         empty_label='Assign to Cell Group (Optional)',
         widget=forms.Select(attrs={'class': 'form-control'})
     )
+class MemberTransferForm(forms.Form):
+    """Form for transferring a member to a new cell group."""
+    
+    target_cell_group = forms.ModelChoiceField(
+        queryset=CellGroup.objects.filter(is_active=True),
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        label="Target Cell Group"
+    )
+    transfer_reason = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 
+            'rows': 3, 
+            'placeholder': 'Reason for transfer (e.g., relocated to a new area)'
+        }),
+        label="Reason for Transfer"
+    )
 
+    def __init__(self, *args, **kwargs):
+        # Extract custom kwargs
+        user = kwargs.pop('user', None)
+        current_cell_group = kwargs.pop('current_cell_group', None)
+        super().__init__(*args, **kwargs)
+        
+        # Restrict target cell groups based on user role
+        if user:
+            if user.is_zone_leader() and user.zone_name:
+                self.fields['target_cell_group'].queryset = CellGroup.objects.filter(
+                    zone__name=user.zone_name, is_active=True
+                )
+            elif user.is_cell_leader() and user.assigned_cell_group and user.assigned_cell_group.zone:
+                # Cell leaders can only transfer members within their own zone
+                self.fields['target_cell_group'].queryset = CellGroup.objects.filter(
+                    zone__name=user.assigned_cell_group.zone.name, is_active=True
+                )
+                
+        # Exclude the current cell group so they can't "transfer" to the same group
+        if current_cell_group:
+            self.fields['target_cell_group'].queryset = self.fields['target_cell_group'].queryset.exclude(id=current_cell_group.id)
 # from django import forms
 # from django.core.exceptions import ValidationError
 # from .models import Member

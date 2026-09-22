@@ -6,7 +6,7 @@ Generated on May 27, 2026.
 
 from pathlib import Path
 import os
-import dj_database_url  # 👈 Add this import
+#import dj_database_url  # 👈 Add this import
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -211,6 +211,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')  # 👈 Use environment variable
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')  # 👈 Use environment variable
+
 
 # File Upload Settings
 MAX_UPLOAD_SIZE = 5242880  # 5MB in bytes

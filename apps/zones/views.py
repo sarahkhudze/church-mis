@@ -156,7 +156,7 @@ def zone_detail(request, pk):
         'active': members.filter(member_status=Member.ACTIVE).count(),
         'left': members.filter(member_status=Member.LEFT).count(),
         'deceased': members.filter(member_status=Member.DECEASED).count(),
-        #'inactive': members.filter(member_status=Member.INACTIVE).count(),
+        'inactive': members.filter(member_status=Member.INACTIVE).count(),
     }
     
     context = {

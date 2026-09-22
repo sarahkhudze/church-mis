@@ -3,6 +3,7 @@ from django.contrib.auth.forms import UserCreationForm, UserChangeForm, Authenti
 from django.contrib.auth.password_validation import validate_password
 from .models import CustomUser, Zone
 from apps.cell_groups.models import CellGroup
+from apps.zones.models import Zone
 
 
 class ZoneForm(forms.ModelForm):
@@ -23,8 +24,8 @@ class CustomUserCreationForm(UserCreationForm):
     
     # Remove admin from the role choices that regular users can select
     USER_ROLE_CHOICES = [
-        ('leader', 'Cell Group Leader'),
-        ('zone_leader', 'Zone Leader'),
+        ('leader', 'Limana Deacon'),
+        ('zone_leader', 'Zone Deacon'),
         ('viewer', 'Viewer (Read-only)'),
     ]
     
@@ -57,11 +58,20 @@ class CustomUserCreationForm(UserCreationForm):
         widget=forms.Select(attrs={'class': 'form-control'}),
         help_text='Select your role in the system.'
     )
-    
+
+    # Define zone_name as a ModelChoiceField to get a dropdown
+    zone_name = forms.ModelChoiceField(
+        queryset=Zone.objects.filter(is_active=True).order_by('name'),
+        required=False,
+        empty_label="Select your Zone",
+        widget=forms.Select(attrs={'class': 'form-control'}),
+        help_text='Select your zone if applicable.'
+    )
+
     class Meta:
         model = CustomUser
         fields = ('username', 'email', 'first_name', 'last_name', 'phone_number', 
-                  'role', 'password1', 'password2')
+                  'role', 'zone_name', 'password1', 'password2')
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

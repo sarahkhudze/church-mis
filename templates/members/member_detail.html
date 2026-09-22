@@ -73,10 +73,17 @@
                         </div>
                     </div>
                     
-                    <div class="mt-3">
+                    <!-- ACTION BUTTONS -->
+                    <div class="mt-4 d-flex flex-wrap gap-2">
                         <a href="{% url 'members:member_edit' member.id %}" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Edit
                         </a>
+                        
+                        <!-- NEW: TRANSFER BUTTON ADDED HERE -->
+                        <a href="{% url 'members:member_transfer' member.id %}" class="btn btn-info">
+                            <i class="fas fa-exchange-alt"></i> Transfer Cell Group
+                        </a>
+
                         <a href="{% url 'members:member_list' %}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left"></i> Back to List
                         </a>

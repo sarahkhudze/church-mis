@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Executive Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-church text-primary"></i> Executive Overview</h2>
+        <span class="badge bg-info text-dark fs-6">Read-Only Access</span>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-users fa-2x text-primary mb-2"></i>
+                    <h3 class="fw-bold">{{ total_members }}</h3>
+                    <p class="text-muted mb-0">Active Members</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-map-marked-alt fa-2x text-success mb-2"></i>
+                    <h3 class="fw-bold">{{ total_zones }}</h3>
+                    <p class="text-muted mb-0">Active Zones</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-home fa-2x text-warning mb-2"></i>
+                    <h3 class="fw-bold">{{ total_cell_groups }}</h3>
+                    <p class="text-muted mb-0">Cell Groups</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <i class="fas fa-user-plus fa-2x text-info mb-2"></i>
+                    <h3 class="fw-bold">{{ new_members_this_month }}</h3>
+                    <p class="text-muted mb-0">New Members (This Month)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Metrics -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-water fa-3x text-primary me-3"></i>
+                    <div>
+                        <h4 class="mb-0 fw-bold">{{ baptisms_this_year }}</h4>
+                        <p class="text-muted mb-0">Baptisms in {{ current_year }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger me-3"></i>
+                    <div>
+                        <h4 class="mb-0 fw-bold">{{ follow_up_needed }}</h4>
+                        <p class="text-muted mb-0">Members Requiring Follow-up</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Recent Members Table -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-clock"></i> Recently Added Members</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Cell Group</th>
+                                    <th>Date Joined</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for member in recent_members %}
+                                <tr>
+                                    <td>{{ member.get_full_name }}</td>
+                                    <td>{{ member.cell_group.name|default:"Unassigned" }}</td>
+                                    <td>{{ member.date_joined_church|date:"M d, Y" }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">No recent members.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Links to Reports -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Quick Reports</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'reports:growth_report' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-line text-primary me-2"></i> Growth Report
+                    </a>
+                    <a href="{% url 'reports:baptism_report' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-water text-info me-2"></i> Baptism Report
+                    </a>
+                    <a href="{% url 'reports:member_report' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-users text-success me-2"></i> Member Directory
+                    </a>
+                    <a href="{% url 'reports:zone_report' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-map text-warning me-2"></i> Zone Summary
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
